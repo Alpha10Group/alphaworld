@@ -37,6 +37,7 @@ export default function Sidebar() {
     { icon: FileText, label: "Memos", href: "/memos" },
     { icon: AlertCircle, label: "Issue Tracker", href: "/issues" },
     { icon: Monitor, label: "IT Tickets", href: "/tickets" },
+    { icon: Settings, label: "Attachments Hub", href: "/attachments" },
   ];
 
   return (

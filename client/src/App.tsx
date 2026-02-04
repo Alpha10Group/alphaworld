@@ -13,6 +13,7 @@ import IssueList from "@/pages/issues/IssueList";
 import IssueCreate from "@/pages/issues/IssueCreate";
 import TicketList from "@/pages/tickets/TicketList";
 import TicketCreate from "@/pages/tickets/TicketCreate";
+import AttachmentsHub from "@/pages/AttachmentsHub";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       
       <Route path="/tickets" component={TicketList} />
       <Route path="/tickets/new" component={TicketCreate} />
+      <Route path="/attachments" component={AttachmentsHub} />
       
       <Route component={NotFound} />
     </Switch>
