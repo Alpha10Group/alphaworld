@@ -79,6 +79,10 @@ interface AppState {
   
   createTicket: (ticket: Omit<Ticket, 'id' | 'status' | 'comments'>) => void;
   updateTicketStatus: (id: string, status: Ticket['status'], comment?: string) => void;
+  resubmitMemo: (id: string, newContent: string) => void;
+  notifications: { id: string; message: string; date: string; read: boolean }[];
+  addNotification: (message: string) => void;
+  markNotificationRead: (id: string) => void;
 }
 
 const MOCK_USERS: User[] = [
@@ -186,62 +190,68 @@ export const useStore = create<AppState>((set, get) => ({
   })),
 
   approveMemo: (id, comment, signature) => set((state) => {
+    const memo = state.memos.find(m => m.id === id);
+    if (!memo) return state;
+
+    const currentStepIndex = memo.workflow.findIndex(w => w.role === memo.currentHandler);
+    if (currentStepIndex === -1) return state;
+
+    const newWorkflow = [...memo.workflow];
+    newWorkflow[currentStepIndex] = {
+      ...newWorkflow[currentStepIndex],
+      status: 'Approved',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      comment,
+      signature
+    };
+
+    const nextStepIndex = currentStepIndex + 1;
+    let nextHandler: Role = memo.currentHandler;
+    let nextStatus: MemoStatus = memo.status;
+
+    if (nextStepIndex < newWorkflow.length) {
+      nextHandler = newWorkflow[nextStepIndex].role;
+      nextStatus = `Pending ${nextHandler}` as MemoStatus;
+      state.addNotification(`Memo ${memo.id} forwarded to ${nextHandler}`);
+    } else {
+      nextStatus = 'Approved';
+      state.addNotification(`Memo ${memo.id} has been fully approved!`);
+    }
+
+    return {
+      memos: state.memos.map(m => m.id === id ? {
+        ...m,
+        workflow: newWorkflow,
+        currentHandler: nextHandler,
+        status: nextStatus
+      } : m)
+    };
+  }),
+
+  rejectMemo: (id, comment) => set((state) => {
+    const memo = state.memos.find(m => m.id === id);
+    if (memo) state.addNotification(`Memo ${memo.id} was rejected by ${state.currentUser.role}`);
+    
     return {
       memos: state.memos.map(memo => {
         if (memo.id !== id) return memo;
-
         const currentStepIndex = memo.workflow.findIndex(w => w.role === memo.currentHandler);
-        if (currentStepIndex === -1) return memo;
-
         const newWorkflow = [...memo.workflow];
         newWorkflow[currentStepIndex] = {
           ...newWorkflow[currentStepIndex],
-          status: 'Approved',
+          status: 'Rejected',
           date: format(new Date(), 'yyyy-MM-dd'),
-          comment,
-          signature
+          comment
         };
-
-        const nextStepIndex = currentStepIndex + 1;
-        let nextHandler: Role = memo.currentHandler;
-        let nextStatus: MemoStatus = memo.status;
-
-        if (nextStepIndex < newWorkflow.length) {
-          nextHandler = newWorkflow[nextStepIndex].role;
-          nextStatus = `Pending ${nextHandler}` as MemoStatus;
-        } else {
-          nextStatus = 'Approved'; // Final approval
-        }
-
+        
         return {
           ...memo,
           workflow: newWorkflow,
-          currentHandler: nextHandler,
-          status: nextStatus
+          status: 'Rejected'
         };
       })
     };
   }),
-
-  rejectMemo: (id, comment) => set((state) => ({
-    memos: state.memos.map(memo => {
-      if (memo.id !== id) return memo;
-      const currentStepIndex = memo.workflow.findIndex(w => w.role === memo.currentHandler);
-      const newWorkflow = [...memo.workflow];
-      newWorkflow[currentStepIndex] = {
-        ...newWorkflow[currentStepIndex],
-        status: 'Rejected',
-        date: format(new Date(), 'yyyy-MM-dd'),
-        comment
-      };
-      
-      return {
-        ...memo,
-        workflow: newWorkflow,
-        status: 'Rejected'
-      };
-    })
-  })),
 
   createIssue: (issue) => set(state => ({
     issues: [...state.issues, { ...issue, id: `ISS-${state.issues.length + 1}`, status: 'Open', reviews: [] }]
@@ -264,5 +274,26 @@ export const useStore = create<AppState>((set, get) => ({
       const newComments = comment ? [...t.comments, { user: state.currentUser.name, text: comment, date: format(new Date(), 'yyyy-MM-dd') }] : t.comments;
       return { ...t, status, comments: newComments };
     })
-  }))
+  })),
+
+  notifications: [],
+  addNotification: (message) => set(state => ({
+    notifications: [{ id: Math.random().toString(), message, date: new Date().toISOString(), read: false }, ...state.notifications]
+  })),
+  markNotificationRead: (id) => set(state => ({
+    notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
+  })),
+
+  resubmitMemo: (id, newContent) => set(state => {
+    state.addNotification(`Memo ${id} has been resubmitted`);
+    return {
+      memos: state.memos.map(m => m.id === id ? {
+        ...m,
+        content: newContent,
+        status: 'Pending HOD',
+        currentHandler: 'HOD',
+        workflow: m.workflow.map(w => ({ ...w, status: 'Pending', date: undefined, comment: undefined, signature: undefined }))
+      } : m)
+    };
+  })
 }));

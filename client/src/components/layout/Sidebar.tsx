@@ -9,7 +9,8 @@ import {
   Settings, 
   LogOut,
   ChevronRight,
-  Menu
+  Menu,
+  Bell
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,11 +23,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function Sidebar() {
   const [location] = useLocation();
-  const { currentUser, setCurrentUser, users } = useStore();
+  const { currentUser, setCurrentUser, users, notifications, markNotificationRead } = useStore();
   const [collapsed, setCollapsed] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/" },
@@ -65,6 +69,50 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      {/* Notifications Trigger */}
+      <div className="px-2 mb-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 h-auto text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white justify-start",
+              collapsed ? "px-0 justify-center" : ""
+            )}>
+              <div className="relative">
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              {!collapsed && <span>Notifications</span>}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-80 ml-2" side="right" align="end">
+            <DropdownMenuLabel>Recent Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-64 overflow-auto">
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-sm text-slate-500">No new notifications</div>
+              ) : (
+                notifications.map(n => (
+                  <DropdownMenuItem 
+                    key={n.id} 
+                    className={cn("p-3 cursor-pointer border-b last:border-0", !n.read && "bg-blue-50/50")}
+                    onClick={() => markNotificationRead(n.id)}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm leading-tight">{n.message}</p>
+                      <span className="text-[10px] text-slate-400">{new Date(n.date).toLocaleTimeString()}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* User Profile / Role Switcher (Mock) */}
       <div className="p-4 border-t border-sidebar-border">

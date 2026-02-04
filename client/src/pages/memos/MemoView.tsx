@@ -36,11 +36,13 @@ export default function MemoView() {
   const [signature, setSignature] = useState(currentUser.name);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'resubmit'>('approve');
+  const [resubmitContent, setResubmitContent] = useState(memo?.content || "");
 
   if (!memo) return <div>Memo not found</div>;
 
   const canAct = memo.currentHandler === currentUser.role && !['Approved', 'Rejected'].includes(memo.status);
+  const canResubmit = memo.status === 'Rejected' && memo.initiator === currentUser.name;
 
   const handleAction = () => {
     setIsProcessing(true);
@@ -48,9 +50,12 @@ export default function MemoView() {
       if (actionType === 'approve') {
         approveMemo(memo.id, actionComment, signature);
         toast({ title: "Approved", description: "Memo has been forwarded to the next stage." });
-      } else {
+      } else if (actionType === 'reject') {
         rejectMemo(memo.id, actionComment);
         toast({ title: "Rejected", description: "Memo has been rejected and returned to initiator.", variant: "destructive" });
+      } else if (actionType === 'resubmit') {
+        useStore.getState().resubmitMemo(memo.id, resubmitContent);
+        toast({ title: "Resubmitted", description: "Memo has been updated and sent back to HOD." });
       }
       setIsProcessing(false);
       setIsDialogOpen(false);
@@ -100,6 +105,14 @@ export default function MemoView() {
               </div>
             </div>
             <div className="flex gap-2">
+               {canResubmit && (
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                    onClick={() => { setActionType('resubmit'); setResubmitContent(memo.content); setIsDialogOpen(true); }}
+                  >
+                    Revise & Resubmit
+                  </Button>
+               )}
                <Button variant="outline" className="gap-2" onClick={handleDownloadPDF}>
                 <Download className="w-4 h-4" /> Download PDF
               </Button>
@@ -226,22 +239,38 @@ export default function MemoView() {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{actionType === 'approve' ? 'Approve Memo' : 'Reject Memo'}</DialogTitle>
+                    <DialogTitle>
+                      {actionType === 'approve' ? 'Approve Memo' : 
+                       actionType === 'reject' ? 'Reject Memo' : 'Revise & Resubmit'}
+                    </DialogTitle>
                     <DialogDescription>
                         {actionType === 'approve' 
                             ? 'Please provide your remarks and digital signature to proceed.' 
-                            : 'Please provide a reason for rejection.'}
+                            : actionType === 'reject'
+                            ? 'Please provide a reason for rejection.'
+                            : 'Update the content of your memo and resubmit for approval.'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Remarks / Comments</Label>
+                    {actionType === 'resubmit' ? (
+                      <div className="space-y-2">
+                        <Label>New Content</Label>
                         <Textarea 
-                            value={actionComment} 
-                            onChange={(e) => setActionComment(e.target.value)}
-                            placeholder={actionType === 'approve' ? "Approved as per budget..." : "Rejected because..."}
+                          value={resubmitContent} 
+                          onChange={(e) => setResubmitContent(e.target.value)}
+                          className="min-h-[200px]"
                         />
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                          <Label>Remarks / Comments</Label>
+                          <Textarea 
+                              value={actionComment} 
+                              onChange={(e) => setActionComment(e.target.value)}
+                              placeholder={actionType === 'approve' ? "Approved as per budget..." : "Rejected because..."}
+                          />
+                      </div>
+                    )}
                     {actionType === 'approve' && (
                         <div className="space-y-2">
                             <Label>Digital Signature</Label>
@@ -256,11 +285,13 @@ export default function MemoView() {
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                     <Button 
-                        variant={actionType === 'approve' ? 'default' : 'destructive'}
+                        variant={actionType === 'reject' ? 'destructive' : 'default'}
                         onClick={handleAction}
                         disabled={isProcessing}
                     >
-                        {isProcessing ? 'Processing...' : actionType === 'approve' ? 'Sign & Approve' : 'Reject'}
+                        {isProcessing ? 'Processing...' : 
+                         actionType === 'approve' ? 'Sign & Approve' : 
+                         actionType === 'reject' ? 'Reject' : 'Resubmit'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
