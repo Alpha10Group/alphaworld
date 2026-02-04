@@ -1,0 +1,268 @@
+import { create } from 'zustand';
+import { addDays, format } from 'date-fns';
+
+export type Role = 'Initiator' | 'HOD' | 'Operations' | 'EAG' | 'MD' | 'Finance' | 'IT' | 'Risk';
+
+export type User = {
+  id: string;
+  name: string;
+  role: Role;
+  avatar: string;
+};
+
+export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Operations' | 'Pending EAG' | 'Pending MD' | 'Pending Finance' | 'Approved' | 'Rejected';
+
+export type Memo = {
+  id: string;
+  title: string;
+  content: string;
+  initiator: string;
+  department: string;
+  date: string;
+  status: MemoStatus;
+  currentHandler: Role;
+  workflow: {
+    role: Role;
+    status: 'Pending' | 'Approved' | 'Rejected' | 'Skipped';
+    date?: string;
+    comment?: string;
+    signature?: string;
+  }[];
+  attachments: string[];
+};
+
+export type Issue = {
+  id: string;
+  title: string;
+  description: string;
+  cost: string;
+  cause: string;
+  date: string;
+  department: string;
+  status: 'Open' | 'In Progress' | 'Resolved';
+  assignedTo: Role[]; // IT, MD, Risk
+  reviews: {
+    role: Role;
+    comment?: string;
+    date?: string;
+  }[];
+};
+
+export type Ticket = {
+  id: string;
+  title: string;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  description: string;
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+  assignedTo: 'IT';
+  comments: {
+    user: string;
+    text: string;
+    date: string;
+  }[];
+};
+
+interface AppState {
+  currentUser: User;
+  users: User[];
+  memos: Memo[];
+  issues: Issue[];
+  tickets: Ticket[];
+  
+  setCurrentUser: (role: Role) => void;
+  createMemo: (memo: Omit<Memo, 'id' | 'status' | 'currentHandler' | 'workflow'>) => void;
+  approveMemo: (id: string, comment: string, signature: string) => void;
+  rejectMemo: (id: string, comment: string) => void;
+  
+  createIssue: (issue: Omit<Issue, 'id' | 'status' | 'reviews'>) => void;
+  reviewIssue: (id: string, comment: string) => void;
+  
+  createTicket: (ticket: Omit<Ticket, 'id' | 'status' | 'comments'>) => void;
+  updateTicketStatus: (id: string, status: Ticket['status'], comment?: string) => void;
+}
+
+const MOCK_USERS: User[] = [
+  { id: '1', name: 'Alice Initiator', role: 'Initiator', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice' },
+  { id: '2', name: 'Bob HOD', role: 'HOD', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob' },
+  { id: '3', name: 'Charlie Ops', role: 'Operations', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie' },
+  { id: '4', name: 'Dana EAG', role: 'EAG', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dana' },
+  { id: '5', name: 'Eve MD', role: 'MD', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Eve' },
+  { id: '6', name: 'Frank Finance', role: 'Finance', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Frank' },
+  { id: '7', name: 'Grace IT', role: 'IT', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Grace' },
+  { id: '8', name: 'Harry Risk', role: 'Risk', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Harry' },
+];
+
+const INITIAL_MEMOS: Memo[] = [
+  {
+    id: 'MEM-2024-001',
+    title: 'Q1 Budget Approval for Marketing Campaign',
+    content: 'Requesting approval for the Q1 digital marketing budget allocation of $50,000.',
+    initiator: 'Alice Initiator',
+    department: 'Marketing',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    status: 'Pending HOD',
+    currentHandler: 'HOD',
+    workflow: [
+      { role: 'HOD', status: 'Pending' },
+      { role: 'Operations', status: 'Pending' },
+      { role: 'EAG', status: 'Pending' },
+      { role: 'MD', status: 'Pending' },
+      { role: 'Finance', status: 'Pending' },
+    ],
+    attachments: ['budget_v1.pdf'],
+  },
+  {
+    id: 'MEM-2024-002',
+    title: 'Procurement of New Laptops',
+    content: 'Request to purchase 5 MacBook Pros for the design team.',
+    initiator: 'Alice Initiator',
+    department: 'Design',
+    date: format(addDays(new Date(), -2), 'yyyy-MM-dd'),
+    status: 'Pending EAG',
+    currentHandler: 'EAG',
+    workflow: [
+      { role: 'HOD', status: 'Approved', date: format(addDays(new Date(), -1), 'yyyy-MM-dd'), comment: 'Approved, within budget.', signature: 'Bob HOD' },
+      { role: 'Operations', status: 'Approved', date: format(addDays(new Date(), -1), 'yyyy-MM-dd'), comment: 'Stock available from preferred vendor.', signature: 'Charlie Ops' },
+      { role: 'EAG', status: 'Pending' },
+      { role: 'MD', status: 'Pending' },
+      { role: 'Finance', status: 'Pending' },
+    ],
+    attachments: ['quote_apple.pdf'],
+  }
+];
+
+export const useStore = create<AppState>((set, get) => ({
+  currentUser: MOCK_USERS[0],
+  users: MOCK_USERS,
+  memos: INITIAL_MEMOS,
+  issues: [
+    {
+      id: 'ISS-001',
+      title: 'Server Room Overheating',
+      description: 'The main server room AC unit is malfunctioning.',
+      cost: '$1200',
+      cause: 'Compressor failure',
+      date: '2024-10-25',
+      department: 'IT',
+      status: 'In Progress',
+      assignedTo: ['IT', 'MD', 'Risk'],
+      reviews: [
+        { role: 'IT', comment: 'Assessed. Need replacement part.', date: '2024-10-26' }
+      ]
+    }
+  ],
+  tickets: [
+    {
+      id: 'TKT-101',
+      title: 'Email Access Issue',
+      priority: 'High',
+      description: 'Cannot access Outlook since password reset.',
+      status: 'Open',
+      assignedTo: 'IT',
+      comments: []
+    }
+  ],
+
+  setCurrentUser: (role) => {
+    const user = MOCK_USERS.find(u => u.role === role);
+    if (user) set({ currentUser: user });
+  },
+
+  createMemo: (memoData) => set((state) => ({
+    memos: [...state.memos, {
+      ...memoData,
+      id: `MEM-${new Date().getFullYear()}-${String(state.memos.length + 1).padStart(3, '0')}`,
+      status: 'Pending HOD',
+      currentHandler: 'HOD',
+      workflow: [
+        { role: 'HOD', status: 'Pending' },
+        { role: 'Operations', status: 'Pending' },
+        { role: 'EAG', status: 'Pending' },
+        { role: 'MD', status: 'Pending' },
+        { role: 'Finance', status: 'Pending' },
+      ],
+      attachments: [],
+    }]
+  })),
+
+  approveMemo: (id, comment, signature) => set((state) => {
+    return {
+      memos: state.memos.map(memo => {
+        if (memo.id !== id) return memo;
+
+        const currentStepIndex = memo.workflow.findIndex(w => w.role === memo.currentHandler);
+        if (currentStepIndex === -1) return memo;
+
+        const newWorkflow = [...memo.workflow];
+        newWorkflow[currentStepIndex] = {
+          ...newWorkflow[currentStepIndex],
+          status: 'Approved',
+          date: format(new Date(), 'yyyy-MM-dd'),
+          comment,
+          signature
+        };
+
+        const nextStepIndex = currentStepIndex + 1;
+        let nextHandler: Role = memo.currentHandler;
+        let nextStatus: MemoStatus = memo.status;
+
+        if (nextStepIndex < newWorkflow.length) {
+          nextHandler = newWorkflow[nextStepIndex].role;
+          nextStatus = `Pending ${nextHandler}` as MemoStatus;
+        } else {
+          nextStatus = 'Approved'; // Final approval
+        }
+
+        return {
+          ...memo,
+          workflow: newWorkflow,
+          currentHandler: nextHandler,
+          status: nextStatus
+        };
+      })
+    };
+  }),
+
+  rejectMemo: (id, comment) => set((state) => ({
+    memos: state.memos.map(memo => {
+      if (memo.id !== id) return memo;
+      const currentStepIndex = memo.workflow.findIndex(w => w.role === memo.currentHandler);
+      const newWorkflow = [...memo.workflow];
+      newWorkflow[currentStepIndex] = {
+        ...newWorkflow[currentStepIndex],
+        status: 'Rejected',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        comment
+      };
+      
+      return {
+        ...memo,
+        workflow: newWorkflow,
+        status: 'Rejected'
+      };
+    })
+  })),
+
+  createIssue: (issue) => set(state => ({
+    issues: [...state.issues, { ...issue, id: `ISS-${state.issues.length + 1}`, status: 'Open', reviews: [] }]
+  })),
+
+  reviewIssue: (id, comment) => set(state => ({
+    issues: state.issues.map(i => i.id === id ? { 
+      ...i, 
+      reviews: [...i.reviews, { role: state.currentUser.role, comment, date: format(new Date(), 'yyyy-MM-dd') }] 
+    } : i)
+  })),
+
+  createTicket: (ticket) => set(state => ({
+    tickets: [...state.tickets, { ...ticket, id: `TKT-${state.tickets.length + 100}`, status: 'Open', comments: [] }]
+  })),
+
+  updateTicketStatus: (id, status, comment) => set(state => ({
+    tickets: state.tickets.map(t => {
+      if (t.id !== id) return t;
+      const newComments = comment ? [...t.comments, { user: state.currentUser.name, text: comment, date: format(new Date(), 'yyyy-MM-dd') }] : t.comments;
+      return { ...t, status, comments: newComments };
+    })
+  }))
+}));

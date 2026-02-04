@@ -5,12 +5,29 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
+import Dashboard from "@/pages/Dashboard";
+import MemoList from "@/pages/memos/MemoList";
+import MemoCreate from "@/pages/memos/MemoCreate";
+import MemoView from "@/pages/memos/MemoView";
+import IssueList from "@/pages/issues/IssueList";
+import IssueCreate from "@/pages/issues/IssueCreate";
+import TicketList from "@/pages/tickets/TicketList";
+import TicketCreate from "@/pages/tickets/TicketCreate";
+
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/" component={Dashboard} />
+      <Route path="/memos" component={MemoList} />
+      <Route path="/memos/new" component={MemoCreate} />
+      <Route path="/memos/:id" component={MemoView} />
+      
+      <Route path="/issues" component={IssueList} />
+      <Route path="/issues/new" component={IssueCreate} />
+      
+      <Route path="/tickets" component={TicketList} />
+      <Route path="/tickets/new" component={TicketCreate} />
+      
       <Route component={NotFound} />
     </Switch>
   );
