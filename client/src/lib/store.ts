@@ -87,6 +87,7 @@ interface AppState {
   auditLogs: { id: string; action: string; user: string; role: string; details: string; timestamp: string }[];
   addAuditLog: (action: string, details: string) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
+  createUser: (name: string, role: Role) => void;
 }
 
 const MOCK_USERS: User[] = [
@@ -324,5 +325,14 @@ export const useStore = create<AppState>((set, get) => ({
   updateUser: (id, updates) => set(state => ({
     users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
     currentUser: state.currentUser.id === id ? { ...state.currentUser, ...updates } : state.currentUser
+  })),
+
+  createUser: (name, role) => set(state => ({
+    users: [...state.users, {
+      id: (state.users.length + 1).toString(),
+      name,
+      role,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`
+    }]
   }))
 }));

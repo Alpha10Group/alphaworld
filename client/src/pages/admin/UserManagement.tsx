@@ -7,16 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Search, UserCog, Edit, Save } from "lucide-react";
+import { Search, UserCog, Edit, Save, Plus } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Role } from "@/lib/store";
 
 export default function UserManagement() {
-  const { users, updateUser, currentUser } = useStore();
+  const { users, updateUser, createUser, currentUser } = useStore();
   const [search, setSearch] = useState("");
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState<Role>("Initiator");
+  
+  // For Editing
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
+  
   const { toast } = useToast();
 
   if (currentUser.role !== 'IT') {
@@ -34,6 +42,16 @@ export default function UserManagement() {
     u.name.toLowerCase().includes(search.toLowerCase()) || 
     u.role.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleCreate = () => {
+    if (newName && newRole) {
+      createUser(newName, newRole);
+      toast({ title: "User Created", description: `Successfully created user ${newName} as ${newRole}.` });
+      setIsCreating(false);
+      setNewName("");
+      setNewRole("Initiator");
+    }
+  };
 
   const handleSave = () => {
     if (editingUser) {
@@ -59,10 +77,50 @@ export default function UserManagement() {
               <h1 className="text-3xl font-heading font-bold text-slate-900">User Management</h1>
               <p className="text-slate-500 mt-1">Manage system access, roles, and profiles.</p>
             </div>
-            {/* Mock Add User Button */}
-            <Button className="gap-2 shadow-lg" disabled>
-              <UserCog className="w-4 h-4" /> Add New User
-            </Button>
+            <Dialog open={isCreating} onOpenChange={setIsCreating}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 shadow-lg">
+                  <UserCog className="w-4 h-4" /> Add New User
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New User</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Full Name</Label>
+                    <Input 
+                      placeholder="e.g. John Doe"
+                      value={newName} 
+                      onChange={(e) => setNewName(e.target.value)} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Assign Role</Label>
+                    <Select onValueChange={(val) => setNewRole(val as Role)} defaultValue={newRole}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Initiator">Initiator</SelectItem>
+                        <SelectItem value="HOD">HOD</SelectItem>
+                        <SelectItem value="Operations">Operations</SelectItem>
+                        <SelectItem value="EAG">EAG</SelectItem>
+                        <SelectItem value="MD">MD</SelectItem>
+                        <SelectItem value="Finance">Finance</SelectItem>
+                        <SelectItem value="IT">IT</SelectItem>
+                        <SelectItem value="Risk">Risk</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreating(false)}>Cancel</Button>
+                  <Button onClick={handleCreate} disabled={!newName}>Create User</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <Card className="border-none shadow-sm">
