@@ -12,17 +12,21 @@ import {
   Users,
   History,
   BarChart3,
-  Paperclip
+  Paperclip,
+  Sun,
+  Moon
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function Sidebar() {
   const [location, setLocation] = useLocation();
   const { currentUser, currentEntity, logout } = useStore();
   const [collapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -102,6 +106,19 @@ export default function Sidebar() {
             </div>
           )}
         </div>
+
+        <Button 
+          variant="ghost" 
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent justify-start",
+            collapsed ? "px-0 justify-center" : ""
+          )}
+          onClick={toggleTheme}
+          data-testid="button-theme-toggle"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+        </Button>
 
         <Button 
           variant="ghost" 
