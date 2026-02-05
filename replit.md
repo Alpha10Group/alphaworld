@@ -64,7 +64,7 @@ Preferred communication style: Simple, everyday language.
 ### Notifications
 - **Resend**: Email notifications via Replit connector integration (server/notifications.ts)
 - **Browser Notifications**: Desktop push notifications using browser Notification API (client/src/lib/notifications.ts)
-- **SMS (Twilio)**: Not configured - user dismissed setup. If needed in future, set up Twilio connector through Replit integrations
+- **SMS (Twilio)**: SMS notifications via Replit connector integration (server/notifications.ts) - sends to approvers with phone numbers
 
 ### UI/Charting
 - **Recharts**: Data visualization for dashboard analytics

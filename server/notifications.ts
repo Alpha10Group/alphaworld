@@ -1,5 +1,6 @@
-// Notification service using Resend integration
+// Notification service using Resend and Twilio integrations
 import { Resend } from 'resend';
+import twilio from 'twilio';
 
 let connectionSettings: any;
 
@@ -108,8 +109,72 @@ export async function sendEmailNotification(payload: NotificationPayload): Promi
   }
 }
 
+// Twilio integration
+let twilioConnectionSettings: any;
+
+async function getTwilioCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (!xReplitToken) {
+    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  }
+
+  twilioConnectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=twilio',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
+    }
+  ).then(res => res.json()).then(data => data.items?.[0]);
+
+  if (!twilioConnectionSettings || (!twilioConnectionSettings.settings.account_sid || !twilioConnectionSettings.settings.api_key || !twilioConnectionSettings.settings.api_key_secret)) {
+    throw new Error('Twilio not connected');
+  }
+  return {
+    accountSid: twilioConnectionSettings.settings.account_sid,
+    apiKey: twilioConnectionSettings.settings.api_key,
+    apiKeySecret: twilioConnectionSettings.settings.api_key_secret,
+    phoneNumber: twilioConnectionSettings.settings.phone_number
+  };
+}
+
+export async function getTwilioClient() {
+  const { accountSid, apiKey, apiKeySecret } = await getTwilioCredentials();
+  return twilio(apiKey, apiKeySecret, { accountSid });
+}
+
+export async function getTwilioFromPhoneNumber() {
+  const { phoneNumber } = await getTwilioCredentials();
+  return phoneNumber;
+}
+
 export async function sendSMSNotification(phone: string, message: string): Promise<boolean> {
-  // SMS integration will be added when Twilio is set up
-  console.log('SMS notification (placeholder):', phone, message);
-  return false;
+  try {
+    const client = await getTwilioClient();
+    const fromNumber = await getTwilioFromPhoneNumber();
+    
+    if (!fromNumber) {
+      console.error('No Twilio phone number configured');
+      return false;
+    }
+
+    const result = await client.messages.create({
+      body: message,
+      from: fromNumber,
+      to: phone
+    });
+
+    console.log('SMS sent successfully:', result.sid);
+    return true;
+  } catch (error) {
+    console.error('Failed to send SMS notification:', error);
+    return false;
+  }
 }

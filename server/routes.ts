@@ -5,7 +5,7 @@ import { insertUserSchema, insertMemoSchema, insertIssueSchema, insertTicketSche
 import bcrypt from "bcrypt";
 import session from "express-session";
 import { z } from "zod";
-import { sendEmailNotification, type NotificationPayload } from "./notifications";
+import { sendEmailNotification, sendSMSNotification, type NotificationPayload } from "./notifications";
 
 declare module 'express-session' {
   interface SessionData {
@@ -241,6 +241,7 @@ export async function registerRoutes(
       // Send notification to HOD (first approver) - only for the memo's entity
       const hodUsers = await storage.getUsersByRole('HOD', req.session.entity);
       for (const hod of hodUsers) {
+        // Send email notification
         try {
           await sendEmailNotification({
             type: 'memo_created',
@@ -253,6 +254,18 @@ export async function registerRoutes(
           });
         } catch (err) {
           console.error('Failed to send email to HOD:', err);
+        }
+        
+        // Send SMS notification if phone number exists
+        if (hod.phone) {
+          try {
+            await sendSMSNotification(
+              hod.phone,
+              `[Alpha10 World] New memo "${memo.title}" requires your approval. Ref: ${memoId}`
+            );
+          } catch (err) {
+            console.error('Failed to send SMS to HOD:', err);
+          }
         }
       }
       
@@ -312,6 +325,7 @@ export async function registerRoutes(
       if (nextStatus !== 'Approved' && nextHandler !== memo.currentHandler) {
         const nextApprovers = await storage.getUsersByRole(nextHandler, memo.entity);
         for (const approver of nextApprovers) {
+          // Send email notification
           try {
             await sendEmailNotification({
               type: 'memo_approved',
@@ -324,6 +338,18 @@ export async function registerRoutes(
             });
           } catch (err) {
             console.error(`Failed to send email to ${nextHandler}:`, err);
+          }
+          
+          // Send SMS notification if phone number exists
+          if (approver.phone) {
+            try {
+              await sendSMSNotification(
+                approver.phone,
+                `[Alpha10 World] Memo "${memo.title}" requires your approval. Approved by ${currentUser!.name}. Ref: ${memo.memoId}`
+              );
+            } catch (err) {
+              console.error(`Failed to send SMS to ${nextHandler}:`, err);
+            }
           }
         }
       }
