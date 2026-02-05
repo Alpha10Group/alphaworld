@@ -1,5 +1,5 @@
 import Sidebar from "@/components/layout/Sidebar";
-import { useStore } from "@/lib/store";
+import { useStore, Memo, Issue, Ticket } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Link } from "wouter";
@@ -17,9 +17,46 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 
 export default function Dashboard() {
-  const { currentUser, memos, issues, tickets } = useStore();
+  const { currentUser } = useStore();
+  const [memos, setMemos] = useState<Memo[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [memosData, issuesData, ticketsData] = await Promise.all([
+          api.memos.getAll(),
+          api.issues.getAll(),
+          api.tickets.getAll()
+        ]);
+        setMemos(memosData);
+        setIssues(issuesData);
+        setTickets(ticketsData);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading || !currentUser) {
+    return (
+      <div className="flex h-screen w-full bg-slate-50/50">
+        <Sidebar />
+        <main className="flex-1 overflow-auto flex items-center justify-center">
+          <div className="text-slate-500">Loading...</div>
+        </main>
+      </div>
+    );
+  }
 
   const myMemos = memos.filter(m => m.initiator === currentUser.name);
   const pendingMemos = memos.filter(m => m.currentHandler === currentUser.role && m.status.includes('Pending'));
@@ -65,9 +102,6 @@ export default function Dashboard() {
 
   const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
-  const notifications = useStore(state => state.notifications);
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   return (
     <div className="flex h-screen w-full bg-slate-50/50">
       <Sidebar />
@@ -83,68 +117,65 @@ export default function Dashboard() {
                 Overview of workflow performance and task status.
               </p>
             </div>
-            {unreadCount > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 animate-pulse">
-                <TrendingUp className="w-4 h-4" />
-                <span className="text-sm font-medium">{unreadCount} New Notifications</span>
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {stats.map((stat) => (
-              <Card key={stat.title} className="border-none shadow-sm">
+              <Card key={stat.title} className="border-none shadow-sm" data-testid={`stat-card-${stat.title.replace(/\s+/g, '-').toLowerCase()}`}>
                 <CardContent className="p-6 flex items-center gap-4">
                   <div className={`p-3 rounded-xl ${stat.color}`}>
                     <stat.icon className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-500">{stat.title}</p>
-                    <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
+                    <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <Card className="lg:col-span-2 border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-none shadow-sm">
+              <CardHeader className="border-b border-slate-100">
+                <div className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-blue-600" />
-                  Volume by Module
-                </CardTitle>
+                  <CardTitle>Activity Overview</CardTitle>
+                </div>
+                <CardDescription>Total count of each workflow type</CardDescription>
               </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <CardContent className="p-6">
+                <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" />
-                    <YAxis />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
+                    <YAxis stroke="#64748b" fontSize={12} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
             <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-amber-600" />
-                  Memo Success Rate
-                </CardTitle>
+              <CardHeader className="border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-blue-600" />
+                  <CardTitle>Memo Status Distribution</CardTitle>
+                </div>
+                <CardDescription>Breakdown by approval status</CardDescription>
               </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <CardContent className="p-6 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height={200}>
                   <RePieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
+                      labelLine={false}
+                      label={(entry) => entry.name}
                       outerRadius={80}
-                      paddingAngle={5}
+                      fill="#8884d8"
                       dataKey="value"
                     >
                       {pieData.map((entry, index) => (
@@ -158,56 +189,52 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle>Action Required</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {pendingMemos.length === 0 && (
-                  <div className="text-center py-8 text-slate-400">
-                    <Clock className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                    <p>No pending items found</p>
-                  </div>
-                )}
-                {pendingMemos.map(memo => (
-                  <div key={memo.id} className="flex items-center justify-between p-4 rounded-lg bg-white border border-slate-100">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 rounded-full bg-blue-50 text-blue-600">
-                        <FileText className="w-5 h-5" />
+          <Card className="border-none shadow-sm">
+            <CardHeader className="border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  <CardTitle>Pending Your Action</CardTitle>
+                </div>
+                <Link href="/memos">
+                  <Button variant="ghost" size="sm" className="gap-2" data-testid="button-view-all-memos">
+                    View All <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+              <CardDescription>Memos awaiting your review and approval</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {pendingMemos.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-8">No pending items</p>
+              ) : (
+                <div className="space-y-3">
+                  {pendingMemos.slice(0, 3).map((memo) => (
+                    <Link key={memo.id} href={`/memos/${memo.memoId}`}>
+                      <div 
+                        className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-all cursor-pointer group border border-slate-100"
+                        data-testid={`memo-item-${memo.memoId}`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-mono font-medium text-slate-500">{memo.memoId}</span>
+                              <StatusBadge status={memo.status} />
+                            </div>
+                            <p className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {memo.title}
+                            </p>
+                            <p className="text-sm text-slate-500 mt-1">From: {memo.initiator}</p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-slate-900 text-sm">{memo.title}</h4>
-                        <p className="text-xs text-slate-500">{memo.initiator} • {memo.date}</p>
-                      </div>
-                    </div>
-                    <Link href={`/memos/${memo.id}`}>
-                      <Button size="sm" variant="outline" className="gap-2">
-                        Review <ArrowRight className="w-3 h-3" />
-                      </Button>
                     </Link>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {memos.slice(0, 5).map(memo => (
-                  <div key={memo.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <h4 className="font-medium text-sm">{memo.title}</h4>
-                      <p className="text-xs text-slate-500">{memo.id}</p>
-                    </div>
-                    <StatusBadge status={memo.status} />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
         </div>
       </main>

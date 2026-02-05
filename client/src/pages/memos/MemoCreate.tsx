@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ArrowLeft, Upload, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+import { useState } from "react";
 
 type MemoFormValues = {
   title: string;
@@ -17,33 +19,53 @@ type MemoFormValues = {
 };
 
 export default function MemoCreate() {
-  const { createMemo, currentUser } = useStore();
+  const { currentUser } = useStore();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
   
   const { register, handleSubmit, formState: { errors } } = useForm<MemoFormValues>({
     defaultValues: {
-      department: "Marketing" // Default mock
+      department: "Marketing"
     }
   });
 
-  const onSubmit = (data: MemoFormValues) => {
-    createMemo({
-      title: data.title,
-      department: data.department,
-      content: data.content,
-      initiator: currentUser.name,
-      date: new Date().toISOString().split('T')[0],
-      attachments: [] // Mock
-    });
-    
-    toast({
-      title: "Memo Submitted",
-      description: "Your memo has been routed to the HOD for approval.",
-    });
+  const onSubmit = async (data: MemoFormValues) => {
+    if (!currentUser) return;
 
-    setLocation("/memos");
+    setSubmitting(true);
+    try {
+      await api.memos.create({
+        title: data.title,
+        department: data.department,
+        content: data.content,
+        initiator: currentUser.name,
+        date: new Date().toISOString().split('T')[0],
+        attachments: []
+      });
+      
+      toast({
+        title: "Memo Submitted",
+        description: "Your memo has been routed to the HOD for approval.",
+      });
+
+      setLocation("/memos");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create memo",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!currentUser) {
+    return <div className="flex h-screen w-full bg-slate-50/50 items-center justify-center">
+      <div className="text-slate-500">Loading...</div>
+    </div>;
+  }
 
   return (
     <div className="flex h-screen w-full bg-slate-50/50">
@@ -52,7 +74,7 @@ export default function MemoCreate() {
         <div className="max-w-3xl mx-auto space-y-6">
           
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => setLocation("/memos")}>
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/memos")} data-testid="button-back">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
@@ -76,6 +98,8 @@ export default function MemoCreate() {
                     placeholder="e.g. Budget Approval for Q3" 
                     {...register("title", { required: true })}
                     className={errors.title ? "border-red-300 focus-visible:ring-red-200" : ""}
+                    data-testid="input-title"
+                    disabled={submitting}
                   />
                   {errors.title && <span className="text-xs text-red-500">Subject is required</span>}
                 </div>
@@ -83,13 +107,15 @@ export default function MemoCreate() {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="initiator">Initiator</Label>
-                    <Input id="initiator" value={currentUser.name} disabled className="bg-slate-50" />
+                    <Input id="initiator" value={currentUser.name} disabled className="bg-slate-50" data-testid="input-initiator" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
                     <Input 
                       id="department" 
                       {...register("department", { required: true })}
+                      data-testid="input-department"
+                      disabled={submitting}
                     />
                   </div>
                 </div>
@@ -101,6 +127,8 @@ export default function MemoCreate() {
                     placeholder="Describe your request in detail..." 
                     className="min-h-[200px] resize-none"
                     {...register("content", { required: true })}
+                    data-testid="textarea-content"
+                    disabled={submitting}
                   />
                   {errors.content && <span className="text-xs text-red-500">Content is required</span>}
                 </div>
@@ -115,11 +143,22 @@ export default function MemoCreate() {
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
-                  <Button type="button" variant="outline" onClick={() => setLocation("/memos")}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setLocation("/memos")}
+                    disabled={submitting}
+                    data-testid="button-cancel"
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit" className="gap-2 bg-blue-600 hover:bg-blue-700">
-                    <Send className="w-4 h-4" /> Submit Memo
+                  <Button 
+                    type="submit" 
+                    className="gap-2 bg-blue-600 hover:bg-blue-700"
+                    disabled={submitting}
+                    data-testid="button-submit"
+                  >
+                    <Send className="w-4 h-4" /> {submitting ? 'Submitting...' : 'Submit Memo'}
                   </Button>
                 </div>
 

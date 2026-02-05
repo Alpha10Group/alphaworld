@@ -2,17 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStore, Entity } from "@/lib/store";
 import { useLocation } from "wouter";
-import { Briefcase, LineChart, Globe, Lock } from "lucide-react";
+import { Briefcase, LineChart, Globe, Lock, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function EntitySelection() {
   const { setEntity, setCurrentUser } = useStore();
   const [, setLocation] = useLocation();
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
-  const [username, setUsername] = useState("admin"); // Pre-fill for ease of use
-  const [password, setPassword] = useState("password");
+  const [username, setUsername] = useState("alice");
+  const [password, setPassword] = useState("password123");
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const entities: { id: Entity; name: string; icon: any; color: string; description: string }[] = [
     {
@@ -40,19 +44,25 @@ export default function EntitySelection() {
 
   const handleEntitySelect = (entity: Entity) => {
     setSelectedEntity(entity);
+    setError("");
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedEntity) {
+    if (!selectedEntity) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await api.auth.login(username, password, selectedEntity);
       setEntity(selectedEntity);
-      // In a real app, we would validate credentials here. 
-      // For now, we simulate a login by just redirecting.
-      
-      // We'll set a default user role just in case
-      // setCurrentUser('Initiator'); 
-      
+      setCurrentUser(response.user);
       setLocation("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,6 +79,12 @@ export default function EntitySelection() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <Alert variant="destructive" data-testid="error-login">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input 
@@ -77,7 +93,9 @@ export default function EntitySelection() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username"
+                  data-testid="input-username"
                   required
+                  disabled={loading}
                 />
               </div>
               <div className="space-y-2">
@@ -88,17 +106,30 @@ export default function EntitySelection() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  data-testid="input-password"
                   required
+                  disabled={loading}
                 />
               </div>
-              <Button type="submit" className="w-full h-11 text-base">
-                Sign In
+              <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-md">
+                <strong>Test Credentials:</strong> alice, bob, charlie, dana, eve, frank, grace, or harry<br />
+                <strong>Password:</strong> password123
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base" 
+                data-testid="button-signin"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
               <Button 
                 type="button" 
                 variant="ghost" 
                 className="w-full"
                 onClick={() => setSelectedEntity(null)}
+                data-testid="button-back"
+                disabled={loading}
               >
                 Back to Entity Selection
               </Button>
@@ -125,6 +156,7 @@ export default function EntitySelection() {
               key={entity.id}
               className="group hover:shadow-2xl transition-all duration-300 border-slate-200 cursor-pointer overflow-hidden relative"
               onClick={() => handleEntitySelect(entity.id)}
+              data-testid={`card-entity-${entity.name.replace(/\s+/g, '-').toLowerCase()}`}
             >
               <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent to-transparent group-hover:from-${entity.color.replace('text-', '')} group-hover:to-${entity.color.replace('text-', '')}/50 transition-all`} />
               

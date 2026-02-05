@@ -3,7 +3,7 @@ import { useStore, Memo } from "@/lib/store";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, FileText } from "lucide-react";
+import { Plus, Search, Filter } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Table,
@@ -13,15 +13,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 
 export default function MemoList() {
-  const { memos, currentUser } = useStore();
+  const { currentUser } = useStore();
+  const [memos, setMemos] = useState<Memo[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMemos = async () => {
+      try {
+        const data = await api.memos.getAll();
+        setMemos(data);
+      } catch (error) {
+        console.error('Failed to fetch memos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMemos();
+  }, []);
 
   const filteredMemos = memos.filter(m => 
     m.title.toLowerCase().includes(search.toLowerCase()) || 
-    m.id.toLowerCase().includes(search.toLowerCase())
+    m.memoId.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -36,7 +53,7 @@ export default function MemoList() {
               <p className="text-slate-500 mt-1">Manage and track internal memo approvals.</p>
             </div>
             <Link href="/memos/new">
-              <Button className="gap-2 shadow-lg hover:shadow-xl transition-all">
+              <Button className="gap-2 shadow-lg hover:shadow-xl transition-all" data-testid="button-new-memo">
                 <Plus className="w-4 h-4" /> New Memo
               </Button>
             </Link>
@@ -51,6 +68,7 @@ export default function MemoList() {
                   className="pl-9 bg-slate-50 border-slate-200"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  data-testid="input-search-memos"
                 />
               </div>
               <Button variant="outline" className="gap-2">
@@ -70,15 +88,21 @@ export default function MemoList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredMemos.length === 0 ? (
-                    <TableRow>
-                        <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                            No memos found.
-                        </TableCell>
-                    </TableRow>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-32 text-center text-slate-500">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredMemos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-32 text-center text-slate-500">
+                      No memos found.
+                    </TableCell>
+                  </TableRow>
                 ) : filteredMemos.map((memo) => (
-                  <TableRow key={memo.id} className="hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="font-mono text-xs font-medium text-slate-500">{memo.id}</TableCell>
+                  <TableRow key={memo.id} className="hover:bg-slate-50/50 transition-colors" data-testid={`memo-row-${memo.memoId}`}>
+                    <TableCell className="font-mono text-xs font-medium text-slate-500">{memo.memoId}</TableCell>
                     <TableCell className="font-medium text-slate-900">{memo.title}</TableCell>
                     <TableCell>{memo.initiator}</TableCell>
                     <TableCell>{memo.date}</TableCell>
@@ -86,8 +110,8 @@ export default function MemoList() {
                       <StatusBadge status={memo.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/memos/${memo.id}`}>
-                        <Button variant="ghost" size="sm">View</Button>
+                      <Link href={`/memos/${memo.memoId}`}>
+                        <Button variant="ghost" size="sm" data-testid={`button-view-${memo.memoId}`}>View</Button>
                       </Link>
                     </TableCell>
                   </TableRow>

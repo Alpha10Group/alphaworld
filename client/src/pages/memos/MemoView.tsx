@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import { useStore, Memo } from "@/lib/store";
 import { useLocation, useRoute } from "wouter";
@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Download, CheckCircle2, XCircle, Clock, FileText, Check } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, Download, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -17,50 +17,91 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { api } from "@/lib/api";
 
 export default function MemoView() {
   const [, params] = useRoute("/memos/:id");
   const [, setLocation] = useLocation();
-  const { memos, currentUser, approveMemo, rejectMemo } = useStore();
+  const { currentUser } = useStore();
   const { toast } = useToast();
   
-  const memo = memos.find(m => m.id === params?.id);
+  const [memo, setMemo] = useState<Memo | null>(null);
+  const [loading, setLoading] = useState(true);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const [actionComment, setActionComment] = useState("");
-  const [signature, setSignature] = useState(currentUser.name);
+  const [signature, setSignature] = useState(currentUser?.name || "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'resubmit'>('approve');
-  const [resubmitContent, setResubmitContent] = useState(memo?.content || "");
+  const [resubmitContent, setResubmitContent] = useState("");
 
-  if (!memo) return <div>Memo not found</div>;
+  useEffect(() => {
+    const fetchMemo = async () => {
+      if (!params?.id) return;
+      try {
+        const data = await api.memos.getById(params.id);
+        setMemo(data);
+        setResubmitContent(data.content);
+      } catch (error) {
+        console.error('Failed to fetch memo:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load memo",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMemo();
+  }, [params?.id]);
+
+  if (loading || !memo || !currentUser) {
+    return (
+      <div className="flex h-screen w-full bg-slate-50/50">
+        <Sidebar />
+        <main className="flex-1 overflow-auto flex items-center justify-center">
+          <div className="text-slate-500">Loading...</div>
+        </main>
+      </div>
+    );
+  }
 
   const canAct = memo.currentHandler === currentUser.role && !['Approved', 'Rejected'].includes(memo.status);
   const canResubmit = memo.status === 'Rejected' && memo.initiator === currentUser.name;
 
-  const handleAction = () => {
+  const handleAction = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
       if (actionType === 'approve') {
-        approveMemo(memo.id, actionComment, signature);
+        await api.memos.approve(memo.memoId, actionComment, signature);
         toast({ title: "Approved", description: "Memo has been forwarded to the next stage." });
       } else if (actionType === 'reject') {
-        rejectMemo(memo.id, actionComment);
+        await api.memos.reject(memo.memoId, actionComment);
         toast({ title: "Rejected", description: "Memo has been rejected and returned to initiator.", variant: "destructive" });
       } else if (actionType === 'resubmit') {
-        useStore.getState().resubmitMemo(memo.id, resubmitContent);
+        await api.memos.resubmit(memo.memoId, resubmitContent);
         toast({ title: "Resubmitted", description: "Memo has been updated and sent back to HOD." });
       }
-      setIsProcessing(false);
+      
+      const updatedMemo = await api.memos.getById(memo.memoId);
+      setMemo(updatedMemo);
       setIsDialogOpen(false);
       setActionComment("");
-    }, 800);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process action",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -76,7 +117,7 @@ export default function MemoView() {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${memo.id}_Signed.pdf`);
+      pdf.save(`${memo.memoId}_Signed.pdf`);
       
       toast({ title: "Success", description: "Memo downloaded successfully." });
     } catch (err) {
@@ -90,17 +131,16 @@ export default function MemoView() {
       <main className="flex-1 overflow-auto p-8">
         <div className="max-w-5xl mx-auto space-y-6">
           
-          {/* Header Actions */}
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => setLocation("/memos")}>
+              <Button variant="ghost" size="icon" onClick={() => setLocation("/memos")} data-testid="button-back">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-heading font-bold text-slate-900">{memo.id}</h1>
+                <h1 className="text-2xl font-heading font-bold text-slate-900">{memo.memoId}</h1>
                 <div className="flex items-center gap-2 mt-1">
-                    <StatusBadge status={memo.status} />
-                    <span className="text-slate-500 text-sm">Initiated by {memo.initiator} on {memo.date}</span>
+                  <StatusBadge status={memo.status} />
+                  <span className="text-slate-500 text-sm">Initiated by {memo.initiator} on {memo.date}</span>
                 </div>
               </div>
             </div>
@@ -109,11 +149,12 @@ export default function MemoView() {
                   <Button 
                     className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
                     onClick={() => { setActionType('resubmit'); setResubmitContent(memo.content); setIsDialogOpen(true); }}
+                    data-testid="button-resubmit"
                   >
                     Revise & Resubmit
                   </Button>
                )}
-               <Button variant="outline" className="gap-2" onClick={handleDownloadPDF}>
+               <Button variant="outline" className="gap-2" onClick={handleDownloadPDF} data-testid="button-download">
                 <Download className="w-4 h-4" /> Download PDF
               </Button>
               
@@ -122,12 +163,14 @@ export default function MemoView() {
                   <Button 
                     variant="destructive" 
                     onClick={() => { setActionType('reject'); setIsDialogOpen(true); }}
+                    data-testid="button-reject"
                   >
                     Reject
                   </Button>
                   <Button 
                     className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
                     onClick={() => { setActionType('approve'); setIsDialogOpen(true); }}
+                    data-testid="button-approve"
                   >
                     <CheckCircle2 className="w-4 h-4" /> Approve
                   </Button>
@@ -136,9 +179,7 @@ export default function MemoView() {
             </div>
           </div>
 
-          {/* DOCUMENT CONTENT TO PRINT */}
           <div ref={pdfRef} className="bg-white p-12 rounded-lg shadow-sm border border-slate-200 min-h-[800px] relative">
-            {/* Header / Logo for PDF */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-8 mb-8">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">N</div>
@@ -148,7 +189,7 @@ export default function MemoView() {
                     </div>
                 </div>
                 <div className="text-right text-sm text-slate-500">
-                    <p>Ref: {memo.id}</p>
+                    <p>Ref: {memo.memoId}</p>
                     <p>Date: {memo.date}</p>
                 </div>
             </div>
@@ -173,11 +214,10 @@ export default function MemoView() {
 
                 <div className="prose max-w-none text-slate-700 leading-relaxed py-4 border-t border-b border-slate-100 min-h-[200px]">
                     {memo.content.split('\n').map((line, i) => (
-                        <p key={i}>{line}</p>
+                        <p key={i}>{line || '\u00A0'}</p>
                     ))}
                 </div>
 
-                {/* Workflow Signatures */}
                 <div>
                     <h3 className="font-heading font-semibold text-lg mb-4">Approval History</h3>
                     <div className="space-y-6">
@@ -213,7 +253,6 @@ export default function MemoView() {
                                                 </div>
                                                 <div className="text-xs text-slate-400">{step.date}</div>
                                             </div>
-                                            {/* Digital Signature Visual */}
                                             {step.signature && (
                                                 <div className="mt-2 font-handwriting text-2xl text-blue-900 opacity-60 transform -rotate-2 select-none pointer-events-none font-serif">
                                                     {step.signature}
@@ -228,14 +267,12 @@ export default function MemoView() {
                 </div>
             </div>
             
-            {/* Footer */}
             <div className="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
                 <p>Generated by NexusFlow System • {new Date().getFullYear()}</p>
-                <p>ID: {memo.id}</p>
+                <p>ID: {memo.memoId}</p>
             </div>
           </div>
 
-          {/* Action Dialog */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -259,6 +296,7 @@ export default function MemoView() {
                           value={resubmitContent} 
                           onChange={(e) => setResubmitContent(e.target.value)}
                           className="min-h-[200px]"
+                          data-testid="textarea-resubmit-content"
                         />
                       </div>
                     ) : (
@@ -268,6 +306,7 @@ export default function MemoView() {
                               value={actionComment} 
                               onChange={(e) => setActionComment(e.target.value)}
                               placeholder={actionType === 'approve' ? "Approved as per budget..." : "Rejected because..."}
+                              data-testid="textarea-comment"
                           />
                       </div>
                     )}
@@ -278,6 +317,7 @@ export default function MemoView() {
                                 value={signature} 
                                 onChange={(e) => setSignature(e.target.value)}
                                 className="font-serif italic text-lg"
+                                data-testid="input-signature"
                             />
                         </div>
                     )}
@@ -288,6 +328,7 @@ export default function MemoView() {
                         variant={actionType === 'reject' ? 'destructive' : 'default'}
                         onClick={handleAction}
                         disabled={isProcessing}
+                        data-testid="button-confirm-action"
                     >
                         {isProcessing ? 'Processing...' : 
                          actionType === 'approve' ? 'Sign & Approve' : 
