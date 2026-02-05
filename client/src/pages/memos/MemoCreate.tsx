@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { useState } from "react";
+import { showBrowserNotification, requestNotificationPermission } from "@/lib/notifications";
 
 type MemoFormValues = {
   title: string;
@@ -47,6 +48,12 @@ export default function MemoCreate() {
       toast({
         title: "Memo Submitted",
         description: "Your memo has been routed to the HOD for approval.",
+      });
+
+      // Show browser notification
+      showBrowserNotification("Memo Submitted Successfully", {
+        body: `Your memo "${data.title}" has been submitted and routed to HOD for approval.`,
+        tag: 'memo-created'
       });
 
       setLocation("/memos");

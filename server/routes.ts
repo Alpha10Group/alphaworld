@@ -5,6 +5,7 @@ import { insertUserSchema, insertMemoSchema, insertIssueSchema, insertTicketSche
 import bcrypt from "bcrypt";
 import session from "express-session";
 import { z } from "zod";
+import { sendEmailNotification, type NotificationPayload } from "./notifications";
 
 declare module 'express-session' {
   interface SessionData {
@@ -227,13 +228,33 @@ export async function registerRoutes(
       
       const memo = await storage.createMemo(memoData);
       
+      const currentUser = await storage.getUser(req.session.userId!);
+      
       await storage.createAuditLog({
         action: 'Create Memo',
-        user: (await storage.getUser(req.session.userId!))!.name,
-        role: (await storage.getUser(req.session.userId!))!.role,
+        user: currentUser!.name,
+        role: currentUser!.role,
         entity: req.session.entity,
         details: `Created memo ${memoId}: ${memo.title}`
       });
+      
+      // Send notification to HOD (first approver)
+      const hodUsers = await storage.getUsersByRole('HOD');
+      for (const hod of hodUsers) {
+        try {
+          await sendEmailNotification({
+            type: 'memo_created',
+            title: 'New Memo Requires Your Approval',
+            message: `A new memo "${memo.title}" has been submitted and requires your review and approval.`,
+            recipientEmail: hod.email,
+            recipientName: hod.name,
+            memoId: memoId,
+            entity: req.session.entity
+          });
+        } catch (err) {
+          console.error('Failed to send email to HOD:', err);
+        }
+      }
       
       res.json(memo);
     } catch (error: any) {
@@ -277,13 +298,35 @@ export async function registerRoutes(
         status: nextStatus
       });
 
+      const currentUser = await storage.getUser(req.session.userId!);
+      
       await storage.createAuditLog({
         action: 'Approve Memo',
-        user: (await storage.getUser(req.session.userId!))!.name,
-        role: (await storage.getUser(req.session.userId!))!.role,
+        user: currentUser!.name,
+        role: currentUser!.role,
         entity: req.session.entity,
         details: `Approved memo ${req.params.id}`
       });
+
+      // Send notification to next approver if memo is not fully approved
+      if (nextStatus !== 'Approved' && nextHandler !== memo.currentHandler) {
+        const nextApprovers = await storage.getUsersByRole(nextHandler);
+        for (const approver of nextApprovers) {
+          try {
+            await sendEmailNotification({
+              type: 'memo_approved',
+              title: 'Memo Requires Your Approval',
+              message: `Memo "${memo.title}" has been approved by ${currentUser!.name} (${currentUser!.role}) and now requires your review and approval.`,
+              recipientEmail: approver.email,
+              recipientName: approver.name,
+              memoId: memo.memoId,
+              entity: req.session.entity
+            });
+          } catch (err) {
+            console.error(`Failed to send email to ${nextHandler}:`, err);
+          }
+        }
+      }
 
       res.json(updatedMemo);
     } catch (error: any) {

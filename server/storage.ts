@@ -22,6 +22,7 @@ export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUsersByRole(role: string): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
@@ -65,6 +66,10 @@ export class PostgresStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(schema.users).where(eq(schema.users.username, username));
     return user;
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return await db.select().from(schema.users).where(eq(schema.users.role, role));
   }
 
   async getAllUsers(): Promise<User[]> {

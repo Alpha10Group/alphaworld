@@ -19,6 +19,8 @@ import {
 } from "recharts";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { requestNotificationPermission, getNotificationPermissionStatus } from "@/lib/notifications";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const { currentUser } = useStore();
@@ -26,6 +28,7 @@ export default function Dashboard() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +48,23 @@ export default function Dashboard() {
       }
     };
     fetchData();
+  }, []);
+
+  // Request notification permission on first visit
+  useEffect(() => {
+    const checkNotificationPermission = async () => {
+      const status = getNotificationPermissionStatus();
+      if (status === 'default') {
+        const permission = await requestNotificationPermission();
+        if (permission === 'granted') {
+          toast({
+            title: "Notifications Enabled",
+            description: "You'll receive desktop notifications for important updates.",
+          });
+        }
+      }
+    };
+    checkNotificationPermission();
   }, []);
 
   if (loading || !currentUser) {
