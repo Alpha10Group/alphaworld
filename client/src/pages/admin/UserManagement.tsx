@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Search, UserCog, Edit, Save, Plus, Trash2 } from "lucide-react";
+import { Search, UserCog, Edit, Save, Plus, Trash2, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function UserManagement() {
-  const { users, updateUser, createUser, deleteUser, currentUser } = useStore();
+  const { users, updateUser, createUser, deleteUser, resetPassword, currentUser } = useStore();
   const [search, setSearch] = useState("");
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -75,6 +75,11 @@ export default function UserManagement() {
   const handleDelete = (id: string) => {
     deleteUser(id);
     toast({ title: "User Deleted", description: "User has been removed from the system.", variant: "destructive" });
+  };
+
+  const handleResetPassword = (id: string) => {
+    resetPassword(id);
+    toast({ title: "Password Reset", description: "User password has been reset to default.", className: "bg-blue-600 text-white border-none" });
   };
 
   const openEdit = (user: any) => {
@@ -209,6 +214,30 @@ export default function UserManagement() {
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-amber-500 hover:text-amber-700 hover:bg-amber-50">
+                              <KeyRound className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Reset Password?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to reset the password for <strong>{user.name}</strong>? 
+                                <br/><br/>
+                                This will set a temporary password that the user must change upon next login.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleResetPassword(user.id)} className="bg-amber-600 hover:bg-amber-700">
+                                Reset Password
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

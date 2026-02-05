@@ -98,6 +98,7 @@ interface AppState {
   updateUser: (id: string, updates: Partial<User>) => void;
   createUser: (name: string, role: Role) => void;
   deleteUser: (id: string) => void;
+  resetPassword: (id: string) => void;
 }
 
 const MOCK_USERS: User[] = [
@@ -357,5 +358,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteUser: (id) => set(state => ({
     users: state.users.filter(u => u.id !== id)
-  }))
+  })),
+
+  resetPassword: (id) => set(state => {
+    const user = state.users.find(u => u.id === id);
+    if (user) {
+      state.addAuditLog('Password Reset', `Password reset for user ${user.name} by administrator`);
+    }
+    return {};
+  })
 }));
