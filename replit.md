@@ -61,6 +61,11 @@ Preferred communication style: Simple, everyday language.
 - **bcrypt**: Password hashing for user authentication
 - **express-session**: Server-side session management
 
+### Notifications
+- **Resend**: Email notifications via Replit connector integration (server/notifications.ts)
+- **Browser Notifications**: Desktop push notifications using browser Notification API (client/src/lib/notifications.ts)
+- **SMS (Twilio)**: Not configured - user dismissed setup. If needed in future, set up Twilio connector through Replit integrations
+
 ### UI/Charting
 - **Recharts**: Data visualization for dashboard analytics
 - **Radix UI**: Accessible component primitives (dialogs, dropdowns, tooltips, etc.)
