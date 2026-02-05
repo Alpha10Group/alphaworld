@@ -238,8 +238,8 @@ export async function registerRoutes(
         details: `Created memo ${memoId}: ${memo.title}`
       });
       
-      // Send notification to HOD (first approver)
-      const hodUsers = await storage.getUsersByRole('HOD');
+      // Send notification to HOD (first approver) - only for the memo's entity
+      const hodUsers = await storage.getUsersByRole('HOD', req.session.entity);
       for (const hod of hodUsers) {
         try {
           await sendEmailNotification({
@@ -308,9 +308,9 @@ export async function registerRoutes(
         details: `Approved memo ${req.params.id}`
       });
 
-      // Send notification to next approver if memo is not fully approved
+      // Send notification to next approver if memo is not fully approved - only for the memo's entity
       if (nextStatus !== 'Approved' && nextHandler !== memo.currentHandler) {
-        const nextApprovers = await storage.getUsersByRole(nextHandler);
+        const nextApprovers = await storage.getUsersByRole(nextHandler, memo.entity);
         for (const approver of nextApprovers) {
           try {
             await sendEmailNotification({
