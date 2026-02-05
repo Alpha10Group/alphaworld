@@ -88,6 +88,7 @@ interface AppState {
   addAuditLog: (action: string, details: string) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   createUser: (name: string, role: Role) => void;
+  deleteUser: (id: string) => void;
 }
 
 const MOCK_USERS: User[] = [
@@ -334,5 +335,9 @@ export const useStore = create<AppState>((set, get) => ({
       role,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`
     }]
+  })),
+
+  deleteUser: (id) => set(state => ({
+    users: state.users.filter(u => u.id !== id)
   }))
 }));
