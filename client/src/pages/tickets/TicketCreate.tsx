@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 
@@ -77,6 +77,15 @@ export default function TicketCreate() {
                 <div className="space-y-2">
                   <Label>Description</Label>
                   <Textarea {...register("description")} className="min-h-[100px]" placeholder="Describe the issue..." />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Attachments</Label>
+                  <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer text-slate-500">
+                    <Upload className="w-6 h-6 opacity-50" />
+                    <p className="text-sm font-medium">Upload screenshots or logs</p>
+                    <p className="text-xs opacity-50">Max size 5MB</p>
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4">
