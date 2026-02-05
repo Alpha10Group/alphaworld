@@ -99,6 +99,15 @@ interface AppState {
   createUser: (name: string, role: Role) => void;
   deleteUser: (id: string) => void;
   resetPassword: (id: string) => void;
+
+  notificationSettings: {
+    email: boolean;
+    sms: boolean;
+    desktop: boolean;
+    phoneNumber: string;
+    emailAddress: string;
+  };
+  updateNotificationSettings: (settings: Partial<AppState['notificationSettings']>) => void;
 }
 
 const MOCK_USERS: User[] = [
@@ -366,5 +375,17 @@ export const useStore = create<AppState>((set, get) => ({
       state.addAuditLog('Password Reset', `Password reset for user ${user.name} by administrator`);
     }
     return {};
-  })
+  }),
+
+  notificationSettings: {
+    email: true,
+    sms: false,
+    desktop: true,
+    phoneNumber: '+1 (555) 000-0000',
+    emailAddress: 'user@alpha10.com'
+  },
+
+  updateNotificationSettings: (settings) => set(state => ({
+    notificationSettings: { ...state.notificationSettings, ...settings }
+  }))
 }));

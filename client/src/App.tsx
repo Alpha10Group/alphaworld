@@ -15,6 +15,7 @@ import IssueCreate from "@/pages/issues/IssueCreate";
 import TicketList from "@/pages/tickets/TicketList";
 import TicketCreate from "@/pages/tickets/TicketCreate";
 import AttachmentsHub from "@/pages/AttachmentsHub";
+import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/admin/UserManagement";
 import AuditLog from "@/pages/admin/AuditLog";
 import Reports from "@/pages/admin/Reports";
@@ -69,6 +70,10 @@ function Router() {
       
       <Route path="/attachments">
         {() => <ProtectedRoute component={AttachmentsHub} />}
+      </Route>
+
+      <Route path="/settings">
+        {() => <ProtectedRoute component={Settings} />}
       </Route>
 
       <Route path="/admin/users">
