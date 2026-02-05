@@ -23,12 +23,19 @@ import Reports from "@/pages/admin/Reports";
 import { useStore } from "@/lib/store";
 import { useLocation } from "wouter";
 
+import { useEffect } from "react";
+
 function ProtectedRoute({ component: Component, ...rest }: any) {
   const { currentEntity } = useStore();
   const [, setLocation] = useLocation();
 
+  useEffect(() => {
+    if (!currentEntity) {
+      setLocation("/");
+    }
+  }, [currentEntity, setLocation]);
+
   if (!currentEntity) {
-    setLocation("/");
     return null;
   }
 
