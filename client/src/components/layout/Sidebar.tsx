@@ -10,7 +10,10 @@ import {
   LogOut,
   ChevronRight,
   Menu,
-  Bell
+  Bell,
+  Users,
+  History,
+  BarChart3
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +41,9 @@ export default function Sidebar() {
     { icon: AlertCircle, label: "Issue Tracker", href: "/issues" },
     { icon: Monitor, label: "IT Tickets", href: "/tickets" },
     { icon: Settings, label: "Attachments Hub", href: "/attachments" },
+    { icon: Users, label: "User Management", href: "/admin/users" },
+    { icon: History, label: "Audit Logs", href: "/admin/audit" },
+    { icon: BarChart3, label: "Reports", href: "/admin/reports" },
   ];
 
   return (

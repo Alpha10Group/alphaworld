@@ -83,6 +83,10 @@ interface AppState {
   notifications: { id: string; message: string; date: string; read: boolean }[];
   addNotification: (message: string) => void;
   markNotificationRead: (id: string) => void;
+  
+  auditLogs: { id: string; action: string; user: string; role: string; details: string; timestamp: string }[];
+  addAuditLog: (action: string, details: string) => void;
+  updateUser: (id: string, updates: Partial<User>) => void;
 }
 
 const MOCK_USERS: User[] = [
@@ -172,10 +176,13 @@ export const useStore = create<AppState>((set, get) => ({
     if (user) set({ currentUser: user });
   },
 
-  createMemo: (memoData) => set((state) => ({
+  createMemo: (memoData) => set((state) => {
+    const newMemoId = `MEM-${new Date().getFullYear()}-${String(state.memos.length + 1).padStart(3, '0')}`;
+    state.addAuditLog('Create Memo', `Memo ${newMemoId} created: ${memoData.title}`);
+    return {
     memos: [...state.memos, {
       ...memoData,
-      id: `MEM-${new Date().getFullYear()}-${String(state.memos.length + 1).padStart(3, '0')}`,
+      id: newMemoId,
       status: 'Pending HOD',
       currentHandler: 'HOD',
       workflow: [
@@ -187,7 +194,8 @@ export const useStore = create<AppState>((set, get) => ({
       ],
       attachments: [],
     }]
-  })),
+  };
+  }),
 
   approveMemo: (id, comment, signature) => set((state) => {
     const memo = state.memos.find(m => m.id === id);
@@ -285,6 +293,7 @@ export const useStore = create<AppState>((set, get) => ({
   })),
 
   resubmitMemo: (id, newContent) => set(state => {
+    state.addAuditLog('Resubmit Memo', `Memo ${id} resubmitted by initiator`);
     state.addNotification(`Memo ${id} has been resubmitted`);
     return {
       memos: state.memos.map(m => m.id === id ? {
@@ -295,5 +304,25 @@ export const useStore = create<AppState>((set, get) => ({
         workflow: m.workflow.map(w => ({ ...w, status: 'Pending', date: undefined, comment: undefined, signature: undefined }))
       } : m)
     };
-  })
+  }),
+
+  auditLogs: [
+    { id: 'LOG-001', action: 'System Init', user: 'System', role: 'System', details: 'System initialized with mock data', timestamp: new Date().toISOString() }
+  ],
+  
+  addAuditLog: (action, details) => set(state => ({
+    auditLogs: [{
+      id: `LOG-${Date.now()}`,
+      action,
+      user: state.currentUser.name,
+      role: state.currentUser.role,
+      details,
+      timestamp: new Date().toISOString()
+    }, ...state.auditLogs]
+  })),
+
+  updateUser: (id, updates) => set(state => ({
+    users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
+    currentUser: state.currentUser.id === id ? { ...state.currentUser, ...updates } : state.currentUser
+  }))
 }));

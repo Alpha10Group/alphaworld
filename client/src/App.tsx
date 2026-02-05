@@ -14,6 +14,9 @@ import IssueCreate from "@/pages/issues/IssueCreate";
 import TicketList from "@/pages/tickets/TicketList";
 import TicketCreate from "@/pages/tickets/TicketCreate";
 import AttachmentsHub from "@/pages/AttachmentsHub";
+import UserManagement from "@/pages/admin/UserManagement";
+import AuditLog from "@/pages/admin/AuditLog";
+import Reports from "@/pages/admin/Reports";
 
 function Router() {
   return (
@@ -29,6 +32,10 @@ function Router() {
       <Route path="/tickets" component={TicketList} />
       <Route path="/tickets/new" component={TicketCreate} />
       <Route path="/attachments" component={AttachmentsHub} />
+
+      <Route path="/admin/users" component={UserManagement} />
+      <Route path="/admin/audit" component={AuditLog} />
+      <Route path="/admin/reports" component={Reports} />
       
       <Route component={NotFound} />
     </Switch>
