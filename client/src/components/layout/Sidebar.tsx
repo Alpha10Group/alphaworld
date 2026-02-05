@@ -56,7 +56,7 @@ export default function Sidebar() {
       collapsed ? "w-16" : "w-64"
     )}>
       <div className="h-16 flex items-center px-4 border-b border-sidebar-border gap-3">
-        <div className="w-8 h-8 rounded bg-[#961A1C] flex items-center justify-center text-white font-bold text-sm">A10</div>
+        <img src="/logo.png" className="w-8 h-8 rounded object-contain" alt="Alpha10 Logo" />
         {!collapsed && (
           <div className="flex flex-col overflow-hidden">
             <span className="font-heading font-bold text-lg tracking-tight leading-none">Alpha10 World</span>

@@ -182,7 +182,7 @@ export default function MemoView() {
           <div ref={pdfRef} className="bg-white p-12 rounded-lg shadow-sm border border-slate-200 min-h-[800px] relative">
             <div className="flex justify-between items-start border-b border-slate-200 pb-8 mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#961A1C] rounded flex items-center justify-center text-white font-bold text-sm">A10</div>
+                    <img src="/logo.png" className="w-10 h-10 rounded object-contain" alt="Alpha10 Logo" />
                     <div>
                         <h2 className="font-heading font-bold text-xl text-slate-900">Alpha10</h2>
                         <p className="text-xs text-slate-500 uppercase tracking-widest">Internal Memo</p>
