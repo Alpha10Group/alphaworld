@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
+import EntitySelection from "@/pages/EntitySelection";
 import Dashboard from "@/pages/Dashboard";
 import MemoList from "@/pages/memos/MemoList";
 import MemoCreate from "@/pages/memos/MemoCreate";
@@ -18,24 +19,67 @@ import UserManagement from "@/pages/admin/UserManagement";
 import AuditLog from "@/pages/admin/AuditLog";
 import Reports from "@/pages/admin/Reports";
 
+import { useStore } from "@/lib/store";
+import { useLocation } from "wouter";
+
+function ProtectedRoute({ component: Component, ...rest }: any) {
+  const { currentEntity } = useStore();
+  const [, setLocation] = useLocation();
+
+  if (!currentEntity) {
+    setLocation("/");
+    return null;
+  }
+
+  return <Component {...rest} />;
+}
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/memos" component={MemoList} />
-      <Route path="/memos/new" component={MemoCreate} />
-      <Route path="/memos/:id" component={MemoView} />
+      <Route path="/" component={EntitySelection} />
       
-      <Route path="/issues" component={IssueList} />
-      <Route path="/issues/new" component={IssueCreate} />
+      <Route path="/dashboard">
+        {() => <ProtectedRoute component={Dashboard} />}
+      </Route>
       
-      <Route path="/tickets" component={TicketList} />
-      <Route path="/tickets/new" component={TicketCreate} />
-      <Route path="/attachments" component={AttachmentsHub} />
+      <Route path="/memos">
+        {() => <ProtectedRoute component={MemoList} />}
+      </Route>
+      <Route path="/memos/new">
+        {() => <ProtectedRoute component={MemoCreate} />}
+      </Route>
+      <Route path="/memos/:id">
+        {(params) => <ProtectedRoute component={MemoView} params={params} />}
+      </Route>
+      
+      <Route path="/issues">
+        {() => <ProtectedRoute component={IssueList} />}
+      </Route>
+      <Route path="/issues/new">
+        {() => <ProtectedRoute component={IssueCreate} />}
+      </Route>
+      
+      <Route path="/tickets">
+        {() => <ProtectedRoute component={TicketList} />}
+      </Route>
+      <Route path="/tickets/new">
+        {() => <ProtectedRoute component={TicketCreate} />}
+      </Route>
+      
+      <Route path="/attachments">
+        {() => <ProtectedRoute component={AttachmentsHub} />}
+      </Route>
 
-      <Route path="/admin/users" component={UserManagement} />
-      <Route path="/admin/audit" component={AuditLog} />
-      <Route path="/admin/reports" component={Reports} />
+      <Route path="/admin/users">
+        {() => <ProtectedRoute component={UserManagement} />}
+      </Route>
+      <Route path="/admin/audit">
+        {() => <ProtectedRoute component={AuditLog} />}
+      </Route>
+      <Route path="/admin/reports">
+        {() => <ProtectedRoute component={Reports} />}
+      </Route>
       
       <Route component={NotFound} />
     </Switch>

@@ -13,7 +13,8 @@ import {
   Bell,
   Users,
   History,
-  BarChart3
+  BarChart3,
+  Building2
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,14 +30,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 export default function Sidebar() {
-  const [location] = useLocation();
-  const { currentUser, setCurrentUser, users, notifications, markNotificationRead } = useStore();
+  const [location, setLocation] = useLocation();
+  const { currentUser, setCurrentUser, users, notifications, markNotificationRead, currentEntity, setEntity } = useStore();
   const [collapsed, setCollapsed] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const handleLogout = () => {
+    setEntity(null);
+    setLocation("/");
+  };
+
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
     { icon: FileText, label: "Memos", href: "/memos" },
     { icon: AlertCircle, label: "Issue Tracker", href: "/issues" },
     { icon: Monitor, label: "IT Tickets", href: "/tickets" },
@@ -57,7 +63,14 @@ export default function Sidebar() {
       {/* Logo Area */}
       <div className="h-16 flex items-center px-4 border-b border-sidebar-border gap-3">
         <img src="/logo.png" className="w-8 h-8 rounded bg-white p-1" alt="Logo" />
-        {!collapsed && <span className="font-heading font-bold text-lg tracking-tight">NexusFlow</span>}
+        {!collapsed && (
+          <div className="flex flex-col overflow-hidden">
+            <span className="font-heading font-bold text-lg tracking-tight leading-none">NexusFlow</span>
+            <span className="text-[10px] text-sidebar-foreground/60 truncate max-w-[150px]" title={currentEntity || ''}>
+              {currentEntity}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -125,7 +138,7 @@ export default function Sidebar() {
       </div>
 
       {/* User Profile / Role Switcher (Mock) */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={cn(
@@ -164,6 +177,18 @@ export default function Sidebar() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <Button 
+          variant="ghost" 
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2 text-red-400 hover:text-red-500 hover:bg-red-50 justify-start",
+            collapsed ? "px-0 justify-center" : ""
+          )}
+          onClick={handleLogout}
+        >
+          <LogOut className="w-4 h-4" />
+          {!collapsed && <span>Sign Out</span>}
+        </Button>
       </div>
     </aside>
   );

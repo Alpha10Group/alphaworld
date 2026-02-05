@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { addDays, format } from 'date-fns';
 
+export type Entity = 'Alpha10 Fund Management' | 'Alpha10 Advisory' | 'Alpha10 Global Market Limited';
+
 export type Role = 'Initiator' | 'HOD' | 'Operations' | 'EAG' | 'MD' | 'Finance' | 'IT' | 'Risk';
 
 export type User = {
@@ -8,6 +10,7 @@ export type User = {
   name: string;
   role: Role;
   avatar: string;
+  entity?: Entity;
 };
 
 export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Operations' | 'Pending EAG' | 'Pending MD' | 'Pending Finance' | 'Approved' | 'Rejected';
@@ -21,6 +24,7 @@ export type Memo = {
   date: string;
   status: MemoStatus;
   currentHandler: Role;
+  entity: Entity;
   workflow: {
     role: Role;
     status: 'Pending' | 'Approved' | 'Rejected' | 'Skipped';
@@ -41,6 +45,7 @@ export type Issue = {
   department: string;
   status: 'Open' | 'In Progress' | 'Resolved';
   assignedTo: Role[]; // IT, MD, Risk
+  entity: Entity;
   reviews: {
     role: Role;
     comment?: string;
@@ -55,6 +60,7 @@ export type Ticket = {
   description: string;
   status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
   assignedTo: 'IT';
+  entity: Entity;
   comments: {
     user: string;
     text: string;
@@ -63,6 +69,9 @@ export type Ticket = {
 };
 
 interface AppState {
+  currentEntity: Entity | null;
+  setEntity: (entity: Entity | null) => void;
+
   currentUser: User;
   users: User[];
   memos: Memo[];
@@ -70,21 +79,21 @@ interface AppState {
   tickets: Ticket[];
   
   setCurrentUser: (role: Role) => void;
-  createMemo: (memo: Omit<Memo, 'id' | 'status' | 'currentHandler' | 'workflow'>) => void;
+  createMemo: (memo: Omit<Memo, 'id' | 'status' | 'currentHandler' | 'workflow' | 'entity'>) => void;
   approveMemo: (id: string, comment: string, signature: string) => void;
   rejectMemo: (id: string, comment: string) => void;
   
-  createIssue: (issue: Omit<Issue, 'id' | 'status' | 'reviews'>) => void;
+  createIssue: (issue: Omit<Issue, 'id' | 'status' | 'reviews' | 'entity'>) => void;
   reviewIssue: (id: string, comment: string) => void;
   
-  createTicket: (ticket: Omit<Ticket, 'id' | 'status' | 'comments'>) => void;
+  createTicket: (ticket: Omit<Ticket, 'id' | 'status' | 'comments' | 'entity'>) => void;
   updateTicketStatus: (id: string, status: Ticket['status'], comment?: string) => void;
   resubmitMemo: (id: string, newContent: string) => void;
   notifications: { id: string; message: string; date: string; read: boolean }[];
   addNotification: (message: string) => void;
   markNotificationRead: (id: string) => void;
   
-  auditLogs: { id: string; action: string; user: string; role: string; details: string; timestamp: string }[];
+  auditLogs: { id: string; action: string; user: string; role: string; details: string; timestamp: string; entity?: Entity }[];
   addAuditLog: (action: string, details: string) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   createUser: (name: string, role: Role) => void;
@@ -112,6 +121,7 @@ const INITIAL_MEMOS: Memo[] = [
     date: format(new Date(), 'yyyy-MM-dd'),
     status: 'Pending HOD',
     currentHandler: 'HOD',
+    entity: 'Alpha10 Fund Management',
     workflow: [
       { role: 'HOD', status: 'Pending' },
       { role: 'Operations', status: 'Pending' },
@@ -130,6 +140,7 @@ const INITIAL_MEMOS: Memo[] = [
     date: format(addDays(new Date(), -2), 'yyyy-MM-dd'),
     status: 'Pending EAG',
     currentHandler: 'EAG',
+    entity: 'Alpha10 Fund Management',
     workflow: [
       { role: 'HOD', status: 'Approved', date: format(addDays(new Date(), -1), 'yyyy-MM-dd'), comment: 'Approved, within budget.', signature: 'Bob HOD' },
       { role: 'Operations', status: 'Approved', date: format(addDays(new Date(), -1), 'yyyy-MM-dd'), comment: 'Stock available from preferred vendor.', signature: 'Charlie Ops' },
@@ -142,6 +153,9 @@ const INITIAL_MEMOS: Memo[] = [
 ];
 
 export const useStore = create<AppState>((set, get) => ({
+  currentEntity: null,
+  setEntity: (entity) => set({ currentEntity: entity }),
+
   currentUser: MOCK_USERS[0],
   users: MOCK_USERS,
   memos: INITIAL_MEMOS,
@@ -156,6 +170,7 @@ export const useStore = create<AppState>((set, get) => ({
       department: 'IT',
       status: 'In Progress',
       assignedTo: ['IT', 'MD', 'Risk'],
+      entity: 'Alpha10 Advisory',
       reviews: [
         { role: 'IT', comment: 'Assessed. Need replacement part.', date: '2024-10-26' }
       ]
@@ -169,6 +184,7 @@ export const useStore = create<AppState>((set, get) => ({
       description: 'Cannot access Outlook since password reset.',
       status: 'Open',
       assignedTo: 'IT',
+      entity: 'Alpha10 Global Market Limited',
       comments: []
     }
   ],
@@ -187,6 +203,7 @@ export const useStore = create<AppState>((set, get) => ({
       id: newMemoId,
       status: 'Pending HOD',
       currentHandler: 'HOD',
+      entity: state.currentEntity || 'Alpha10 Fund Management',
       workflow: [
         { role: 'HOD', status: 'Pending' },
         { role: 'Operations', status: 'Pending' },
@@ -264,7 +281,7 @@ export const useStore = create<AppState>((set, get) => ({
   }),
 
   createIssue: (issue) => set(state => ({
-    issues: [...state.issues, { ...issue, id: `ISS-${state.issues.length + 1}`, status: 'Open', reviews: [] }]
+    issues: [...state.issues, { ...issue, id: `ISS-${state.issues.length + 1}`, status: 'Open', reviews: [], entity: state.currentEntity || 'Alpha10 Fund Management' }]
   })),
 
   reviewIssue: (id, comment) => set(state => ({
@@ -275,7 +292,7 @@ export const useStore = create<AppState>((set, get) => ({
   })),
 
   createTicket: (ticket) => set(state => ({
-    tickets: [...state.tickets, { ...ticket, id: `TKT-${state.tickets.length + 100}`, status: 'Open', comments: [] }]
+    tickets: [...state.tickets, { ...ticket, id: `TKT-${state.tickets.length + 100}`, status: 'Open', comments: [], entity: state.currentEntity || 'Alpha10 Fund Management' }]
   })),
 
   updateTicketStatus: (id, status, comment) => set(state => ({
@@ -319,7 +336,8 @@ export const useStore = create<AppState>((set, get) => ({
       user: state.currentUser.name,
       role: state.currentUser.role,
       details,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      entity: state.currentEntity || undefined
     }, ...state.auditLogs]
   })),
 
