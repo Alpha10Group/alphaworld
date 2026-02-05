@@ -57,51 +57,51 @@
 }
 
 :root {
-  /* Enterprise Blue Theme - Clean, Trustworthy, Professional */
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
+  /* Alpha10 Theme - Black, White, Grey, Oxblood */
+  --background: 0 0% 98%;
+  --foreground: 0 0% 9%;
 
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 0 0% 9%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --popover-foreground: 0 0% 9%;
 
-  --primary: 221 83% 53%; /* Strong Corporate Blue */
-  --primary-foreground: 210 40% 98%;
+  --primary: 358 76% 35%; /* Oxblood #961A1C */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222 47% 11.2%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
 
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
 
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222 47% 11.2%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 9%;
 
   --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221 83% 53%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 358 76% 35%;
 
   --radius: 0.5rem;
 
-  --sidebar: 222 47% 11%; /* Dark Sidebar for contrast */
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 221 83% 53%;
-  --sidebar-primary-foreground: 210 40% 98%;
-  --sidebar-accent: 217 33% 17%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 17%;
-  --sidebar-ring: 221 83% 53%;
+  --sidebar: 0 0% 9%; /* Black Sidebar */
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 358 76% 35%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 15%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-ring: 358 76% 35%;
 
-  --chart-1: 221 83% 53%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
+  --chart-1: 358 76% 35%; /* Oxblood */
+  --chart-2: 0 0% 35%; /* Grey */
+  --chart-3: 0 0% 20%; /* Dark grey */
+  --chart-4: 0 0% 50%; /* Medium grey */
+  --chart-5: 358 60% 45%; /* Lighter oxblood */
 }
 
 .dark {

@@ -23,21 +23,21 @@ export default function EntitySelection() {
       id: 'Alpha10 Fund Management',
       name: 'Alpha10 Fund Management',
       icon: LineChart,
-      color: 'text-blue-600',
+      color: 'text-[#961A1C]',
       description: 'Investment portfolios, asset allocation, and fund performance monitoring.'
     },
     {
       id: 'Alpha10 Advisory',
       name: 'Alpha10 Advisory',
       icon: Briefcase,
-      color: 'text-emerald-600',
+      color: 'text-[#961A1C]',
       description: 'Strategic consulting, risk assessment, and business advisory services.'
     },
     {
       id: 'Alpha10 Global Market Limited',
       name: 'Alpha10 Global Market Limited',
       icon: Globe,
-      color: 'text-indigo-600',
+      color: 'text-[#961A1C]',
       description: 'International trade, currency exchange, and global market operations.'
     }
   ];
@@ -144,7 +144,7 @@ export default function EntitySelection() {
     <div className="min-h-screen w-full bg-slate-50 flex flex-col items-center justify-center p-8">
       <div className="max-w-5xl w-full space-y-12">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">Welcome to NexusFlow</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">Welcome to Alpha10 World!</h1>
           <p className="text-xl text-slate-500 max-w-2xl mx-auto">
             Select your organization entity to proceed to the secure workspace.
           </p>
@@ -164,7 +164,7 @@ export default function EntitySelection() {
                 <div className={`w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   <entity.icon className={`w-8 h-8 ${entity.color}`} />
                 </div>
-                <CardTitle className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                <CardTitle className="text-xl font-bold text-slate-900 group-hover:text-[#961A1C] transition-colors">
                   {entity.name}
                 </CardTitle>
               </CardHeader>
