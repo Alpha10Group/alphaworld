@@ -1,5 +1,5 @@
 import Sidebar from "@/components/layout/Sidebar";
-import { useStore } from "@/lib/store";
+import { useStore, Ticket } from "@/lib/store";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
@@ -13,51 +13,79 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 
 export default function TicketList() {
-  const { tickets, updateTicketStatus, currentUser } = useStore();
+  const { currentUser } = useStore();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const data = await api.tickets.getAll();
+        setTickets(data);
+      } catch (error) {
+        console.error('Failed to fetch tickets:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, []);
 
   const filtered = tickets.filter(t => 
     t.title.toLowerCase().includes(search.toLowerCase()) || 
-    t.id.toLowerCase().includes(search.toLowerCase())
+    t.ticketId.toLowerCase().includes(search.toLowerCase())
   );
 
-  const canEdit = currentUser.role === 'IT';
+  const canEdit = currentUser?.role === 'IT';
+
+  const handleStatusUpdate = async (ticketId: number, status: string) => {
+    try {
+      await api.tickets.updateStatus(ticketId, status);
+      const data = await api.tickets.getAll();
+      setTickets(data);
+    } catch (error) {
+      console.error('Failed to update ticket:', error);
+    }
+  };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50/50">
+    <div className="flex h-screen w-full bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex justify-between items-end">
             <div>
-              <h1 className="text-3xl font-heading font-bold text-slate-900">IT Tickets</h1>
-              <p className="text-slate-500 mt-1">Technical support requests and status.</p>
+              <h1 className="text-3xl font-heading font-bold text-foreground">IT Tickets</h1>
+              <p className="text-muted-foreground mt-1">Technical support requests and status.</p>
             </div>
             <Link href="/tickets/new">
-              <Button className="gap-2 shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Button className="gap-2 shadow-lg" data-testid="button-new-ticket">
                 <Plus className="w-4 h-4" /> New Ticket
               </Button>
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex gap-4">
+          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-border flex gap-4">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search tickets..." 
-                  className="pl-9 bg-slate-50 border-slate-200"
+                  className="pl-9"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  data-testid="input-search-tickets"
                 />
               </div>
             </div>
 
             <Table>
-              <TableHeader className="bg-slate-50">
+              <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Subject</TableHead>
@@ -67,10 +95,22 @@ export default function TicketList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((ticket) => (
-                  <TableRow key={ticket.id} className="hover:bg-slate-50/50">
-                    <TableCell className="font-mono text-xs font-medium text-slate-500">{ticket.id}</TableCell>
-                    <TableCell className="font-medium text-slate-900">{ticket.title}</TableCell>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={canEdit ? 5 : 4} className="h-32 text-center text-muted-foreground">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={canEdit ? 5 : 4} className="h-32 text-center text-muted-foreground">
+                      No tickets found.
+                    </TableCell>
+                  </TableRow>
+                ) : filtered.map((ticket) => (
+                  <TableRow key={ticket.id} className="hover:bg-muted/50" data-testid={`ticket-row-${ticket.ticketId}`}>
+                    <TableCell className="font-mono text-xs font-medium text-muted-foreground">{ticket.ticketId}</TableCell>
+                    <TableCell className="font-medium text-foreground">{ticket.title}</TableCell>
                     <TableCell>
                       <StatusBadge status={ticket.priority} />
                     </TableCell>
@@ -78,10 +118,10 @@ export default function TicketList() {
                     {canEdit && (
                       <TableCell className="text-right space-x-2">
                         {ticket.status === 'Open' && (
-                          <Button size="sm" onClick={() => updateTicketStatus(ticket.id, 'In Progress')}>Take</Button>
+                          <Button size="sm" onClick={() => handleStatusUpdate(ticket.id, 'In Progress')}>Take</Button>
                         )}
                         {ticket.status === 'In Progress' && (
-                          <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-200" onClick={() => updateTicketStatus(ticket.id, 'Resolved')}>Resolve</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(ticket.id, 'Resolved')}>Resolve</Button>
                         )}
                         {ticket.status === 'Resolved' && (
                            <Button size="sm" variant="ghost" disabled>Resolved</Button>

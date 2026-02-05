@@ -1,8 +1,8 @@
 import Sidebar from "@/components/layout/Sidebar";
-import { useStore } from "@/lib/store";
+import { useStore, Issue } from "@/lib/store";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -13,49 +13,66 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 
 export default function IssueList() {
-  const { issues } = useStore();
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const data = await api.issues.getAll();
+        setIssues(data);
+      } catch (error) {
+        console.error('Failed to fetch issues:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchIssues();
+  }, []);
 
   const filtered = issues.filter(i => 
     i.title.toLowerCase().includes(search.toLowerCase()) || 
-    i.id.toLowerCase().includes(search.toLowerCase())
+    i.issueId.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="flex h-screen w-full bg-slate-50/50">
+    <div className="flex h-screen w-full bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex justify-between items-end">
             <div>
-              <h1 className="text-3xl font-heading font-bold text-slate-900">Issue Tracker</h1>
-              <p className="text-slate-500 mt-1">Log and track operational incidents and costs.</p>
+              <h1 className="text-3xl font-heading font-bold text-foreground">Issue Tracker</h1>
+              <p className="text-muted-foreground mt-1">Log and track operational incidents and costs.</p>
             </div>
             <Link href="/issues/new">
-              <Button className="gap-2 shadow-lg bg-rose-600 hover:bg-rose-700 text-white">
+              <Button className="gap-2 shadow-lg" data-testid="button-new-issue">
                 <Plus className="w-4 h-4" /> Log Issue
               </Button>
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex gap-4">
+          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-border flex gap-4">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search issues..." 
-                  className="pl-9 bg-slate-50 border-slate-200"
+                  className="pl-9"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  data-testid="input-search-issues"
                 />
               </div>
             </div>
 
             <Table>
-              <TableHeader className="bg-slate-50">
+              <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Incident</TableHead>
@@ -66,10 +83,22 @@ export default function IssueList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((issue) => (
-                  <TableRow key={issue.id} className="hover:bg-slate-50/50">
-                    <TableCell className="font-mono text-xs font-medium text-slate-500">{issue.id}</TableCell>
-                    <TableCell className="font-medium text-slate-900">{issue.title}</TableCell>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                      No issues found.
+                    </TableCell>
+                  </TableRow>
+                ) : filtered.map((issue) => (
+                  <TableRow key={issue.id} className="hover:bg-muted/50" data-testid={`issue-row-${issue.issueId}`}>
+                    <TableCell className="font-mono text-xs font-medium text-muted-foreground">{issue.issueId}</TableCell>
+                    <TableCell className="font-medium text-foreground">{issue.title}</TableCell>
                     <TableCell>{issue.department}</TableCell>
                     <TableCell>{issue.cost}</TableCell>
                     <TableCell>{issue.date}</TableCell>
