@@ -13,10 +13,21 @@ import { useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AuditLog() {
-  const { auditLogs } = useStore();
+  const { auditLogs, currentUser } = useStore();
   const [search, setSearch] = useState("");
   const tableRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  if (currentUser.role !== 'IT') {
+    return (
+      <div className="flex h-screen w-full bg-slate-50/50 items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-slate-900">Access Denied</h1>
+          <p className="text-slate-500">You do not have permission to view this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   const filteredLogs = auditLogs.filter(log => 
     log.action.toLowerCase().includes(search.toLowerCase()) || 

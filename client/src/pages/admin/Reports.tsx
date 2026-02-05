@@ -24,9 +24,20 @@ import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Reports() {
-  const { memos, issues, tickets } = useStore();
+  const { memos, issues, tickets, currentUser } = useStore();
   const reportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  if (currentUser.role !== 'IT') {
+    return (
+      <div className="flex h-screen w-full bg-slate-50/50 items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-slate-900">Access Denied</h1>
+          <p className="text-slate-500">You do not have permission to view this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   const chartData = [
     { name: 'Memos', count: memos.length },
