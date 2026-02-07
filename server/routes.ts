@@ -26,14 +26,21 @@ const fileStorage = multer.diskStorage({
 
 const upload = multer({
   storage: fileStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.xlsx', '.xls', '.csv', '.txt'];
+    const allowed = [
+      '.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.svg',
+      '.xlsx', '.xls', '.csv', '.txt', '.rtf',
+      '.pptx', '.ppt', '.odt', '.ods', '.odp',
+      '.zip', '.rar', '.7z',
+      '.mp4', '.mp3', '.wav',
+      '.html', '.xml', '.json',
+    ];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error(`File type ${ext} not allowed`));
+      cb(new Error(`File type ${ext} not allowed. Supported: PDF, Word, Excel, PowerPoint, Images, Archives, and more.`));
     }
   }
 });
@@ -71,7 +78,7 @@ export async function registerRoutes(
     next();
   };
 
-  app.post("/api/upload", requireAuth, upload.array('files', 10), (req: any, res) => {
+  app.post("/api/upload", requireAuth, upload.array('files', 20), (req: any, res) => {
     try {
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {

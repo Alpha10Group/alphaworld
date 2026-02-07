@@ -387,7 +387,7 @@ export default function MemoView() {
                             ref={fileInputRef}
                             onChange={handleFileUpload}
                             multiple
-                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx,.xls,.csv,.txt"
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.svg,.xlsx,.xls,.csv,.txt,.rtf,.pptx,.ppt,.odt,.ods,.odp,.zip,.rar,.7z,.mp4,.mp3,.wav,.html,.xml,.json"
                             className="hidden"
                             data-testid="input-resubmit-file-upload"
                           />

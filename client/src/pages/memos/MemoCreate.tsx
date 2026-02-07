@@ -189,7 +189,7 @@ export default function MemoCreate() {
                     ref={fileInputRef}
                     onChange={handleFileUpload}
                     multiple
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx,.xls,.csv,.txt"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.svg,.xlsx,.xls,.csv,.txt,.rtf,.pptx,.ppt,.odt,.ods,.odp,.zip,.rar,.7z,.mp4,.mp3,.wav,.html,.xml,.json"
                     className="hidden"
                     data-testid="input-file-upload"
                   />
@@ -199,7 +199,7 @@ export default function MemoCreate() {
                   >
                     <Upload className="w-8 h-8 opacity-50" />
                     <p className="text-sm font-medium">{uploading ? 'Uploading...' : 'Click to upload files'}</p>
-                    <p className="text-xs opacity-50">PDF, DOCX, PNG, JPG, XLSX, CSV, TXT up to 10MB</p>
+                    <p className="text-xs opacity-50">PDF, Word, Excel, PowerPoint, Images, Archives, and more — up to 50MB per file, 20 files max</p>
                   </div>
 
                   {uploadedFiles.length > 0 && (
