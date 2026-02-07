@@ -72,6 +72,7 @@ export type Ticket = {
     date: string;
   }[];
   attachments: Array<{ originalName: string; url: string }>;
+  createdAt: string;
 };
 
 interface AppState {

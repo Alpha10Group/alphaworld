@@ -89,6 +89,7 @@ export default function TicketList() {
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Subject</TableHead>
+                  <TableHead>Date</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -97,13 +98,13 @@ export default function TicketList() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                       No tickets found.
                     </TableCell>
                   </TableRow>
@@ -111,6 +112,9 @@ export default function TicketList() {
                   <TableRow key={ticket.id} className="hover:bg-muted/50" data-testid={`ticket-row-${ticket.ticketId}`}>
                     <TableCell className="font-mono text-xs font-medium text-muted-foreground">{ticket.ticketId}</TableCell>
                     <TableCell className="font-medium text-foreground">{ticket.title}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : '—'}
+                    </TableCell>
                     <TableCell>
                       <StatusBadge status={ticket.priority} />
                     </TableCell>
