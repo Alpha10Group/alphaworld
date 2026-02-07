@@ -544,6 +544,18 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/issues/:id", requireAuth, async (req, res) => {
+    try {
+      const issue = await storage.getIssue(parseInt(req.params.id));
+      if (!issue) {
+        return res.status(404).json({ message: "Issue not found" });
+      }
+      res.json(issue);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.patch("/api/issues/:id/review", requireAuth, async (req, res) => {
     try {
       const { comment } = req.body;
@@ -586,6 +598,18 @@ export async function registerRoutes(
     try {
       const tickets = await storage.getAllTickets(req.session.entity!);
       res.json(tickets);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/tickets/:id", requireAuth, async (req, res) => {
+    try {
+      const ticket = await storage.getTicket(parseInt(req.params.id));
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      res.json(ticket);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

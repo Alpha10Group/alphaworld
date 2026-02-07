@@ -12,8 +12,10 @@ import MemoCreate from "@/pages/memos/MemoCreate";
 import MemoView from "@/pages/memos/MemoView";
 import IssueList from "@/pages/issues/IssueList";
 import IssueCreate from "@/pages/issues/IssueCreate";
+import IssueView from "@/pages/issues/IssueView";
 import TicketList from "@/pages/tickets/TicketList";
 import TicketCreate from "@/pages/tickets/TicketCreate";
+import TicketView from "@/pages/tickets/TicketView";
 import AttachmentsHub from "@/pages/AttachmentsHub";
 import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/admin/UserManagement";
@@ -67,12 +69,18 @@ function Router() {
       <Route path="/issues/new">
         {() => <ProtectedRoute component={IssueCreate} />}
       </Route>
+      <Route path="/issues/:id">
+        {(params) => <ProtectedRoute component={IssueView} params={params} />}
+      </Route>
       
       <Route path="/tickets">
         {() => <ProtectedRoute component={TicketList} />}
       </Route>
       <Route path="/tickets/new">
         {() => <ProtectedRoute component={TicketCreate} />}
+      </Route>
+      <Route path="/tickets/:id">
+        {(params) => <ProtectedRoute component={TicketView} params={params} />}
       </Route>
       
       <Route path="/attachments">

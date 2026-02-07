@@ -2,7 +2,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { useStore, Issue } from "@/lib/store";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -80,18 +80,19 @@ export default function IssueList() {
                   <TableHead>Cost</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                       No issues found.
                     </TableCell>
                   </TableRow>
@@ -103,6 +104,13 @@ export default function IssueList() {
                     <TableCell>{issue.cost}</TableCell>
                     <TableCell>{issue.date}</TableCell>
                     <TableCell><StatusBadge status={issue.status} /></TableCell>
+                    <TableCell className="text-right">
+                      <Link href={`/issues/${issue.id}`}>
+                        <Button size="sm" variant="outline" className="gap-1" data-testid={`button-view-${issue.issueId}`}>
+                          <Eye className="w-3 h-3" /> View
+                        </Button>
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

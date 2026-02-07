@@ -2,7 +2,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { useStore, Ticket } from "@/lib/store";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -91,19 +91,19 @@ export default function TicketList() {
                   <TableHead>Subject</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
-                  {canEdit && <TableHead className="text-right">Action</TableHead>}
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={canEdit ? 5 : 4} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={canEdit ? 5 : 4} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                       No tickets found.
                     </TableCell>
                   </TableRow>
@@ -115,19 +115,19 @@ export default function TicketList() {
                       <StatusBadge status={ticket.priority} />
                     </TableCell>
                     <TableCell><StatusBadge status={ticket.status} /></TableCell>
-                    {canEdit && (
-                      <TableCell className="text-right space-x-2">
-                        {ticket.status === 'Open' && (
-                          <Button size="sm" onClick={() => handleStatusUpdate(ticket.id, 'In Progress')}>Take</Button>
-                        )}
-                        {ticket.status === 'In Progress' && (
-                          <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(ticket.id, 'Resolved')}>Resolve</Button>
-                        )}
-                        {ticket.status === 'Resolved' && (
-                           <Button size="sm" variant="ghost" disabled>Resolved</Button>
-                        )}
-                      </TableCell>
-                    )}
+                    <TableCell className="text-right space-x-2">
+                      <Link href={`/tickets/${ticket.id}`}>
+                        <Button size="sm" variant="outline" className="gap-1" data-testid={`button-view-${ticket.ticketId}`}>
+                          <Eye className="w-3 h-3" /> View
+                        </Button>
+                      </Link>
+                      {canEdit && ticket.status === 'Open' && (
+                        <Button size="sm" onClick={() => handleStatusUpdate(ticket.id, 'In Progress')} data-testid={`button-take-${ticket.ticketId}`}>Take</Button>
+                      )}
+                      {canEdit && ticket.status === 'In Progress' && (
+                        <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(ticket.id, 'Resolved')} data-testid={`button-resolve-${ticket.ticketId}`}>Resolve</Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
