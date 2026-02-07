@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertUserSchema, insertMemoSchema, insertIssueSchema, insertTicketSchema } from "@shared/schema";
+import { storage, db } from "./storage";
+import { insertUserSchema, insertMemoSchema, insertIssueSchema, insertTicketSchema, issues, tickets } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import { z } from "zod";
@@ -533,8 +533,13 @@ export async function registerRoutes(
 
   app.post("/api/issues", requireAuth, async (req, res) => {
     try {
-      const issueCount = (await storage.getAllIssues(req.session.entity!)).length;
-      const issueId = `ISS-${String(issueCount + 1).padStart(3, '0')}`;
+      const allIssuesAllEntities = await db.select({ issueId: issues.issueId }).from(issues);
+      let maxNum = 0;
+      for (const row of allIssuesAllEntities) {
+        const match = row.issueId.match(/ISS-(\d+)/);
+        if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+      const issueId = `ISS-${String(maxNum + 1).padStart(3, '0')}`;
       
       const issueData = {
         ...req.body,
@@ -634,8 +639,13 @@ export async function registerRoutes(
 
   app.post("/api/tickets", requireAuth, async (req, res) => {
     try {
-      const ticketCount = (await storage.getAllTickets(req.session.entity!)).length;
-      const ticketId = `TKT-${String(ticketCount + 100).padStart(3, '0')}`;
+      const allTicketsAllEntities = await db.select({ ticketId: tickets.ticketId }).from(tickets);
+      let maxTicketNum = 0;
+      for (const row of allTicketsAllEntities) {
+        const match = row.ticketId.match(/TKT-(\d+)/);
+        if (match) maxTicketNum = Math.max(maxTicketNum, parseInt(match[1], 10));
+      }
+      const ticketId = `TKT-${String(maxTicketNum + 1).padStart(3, '0')}`;
       
       const ticketData = {
         ...req.body,
