@@ -39,6 +39,7 @@ export default function MemoView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'resubmit'>('approve');
   const [resubmitContent, setResubmitContent] = useState("");
+  const [resubmitTitle, setResubmitTitle] = useState("");
 
   useEffect(() => {
     const fetchMemo = async () => {
@@ -47,6 +48,7 @@ export default function MemoView() {
         const data = await api.memos.getById(params.id);
         setMemo(data);
         setResubmitContent(data.content);
+        setResubmitTitle(data.title);
       } catch (error) {
         console.error('Failed to fetch memo:', error);
         toast({
@@ -85,7 +87,7 @@ export default function MemoView() {
         await api.memos.reject(memo.memoId, actionComment);
         toast({ title: "Rejected", description: "Memo has been rejected and returned to initiator.", variant: "destructive" });
       } else if (actionType === 'resubmit') {
-        await api.memos.resubmit(memo.memoId, resubmitContent);
+        await api.memos.resubmit(memo.memoId, resubmitContent, resubmitTitle);
         toast({ title: "Resubmitted", description: "Memo has been updated and sent back to HOD." });
       }
       
@@ -148,7 +150,7 @@ export default function MemoView() {
                {canResubmit && (
                   <Button 
                     className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                    onClick={() => { setActionType('resubmit'); setResubmitContent(memo.content); setIsDialogOpen(true); }}
+                    onClick={() => { setActionType('resubmit'); setResubmitContent(memo.content); setResubmitTitle(memo.title); setIsDialogOpen(true); }}
                     data-testid="button-resubmit"
                   >
                     Revise & Resubmit
@@ -208,7 +210,7 @@ export default function MemoView() {
                     </div>
                     <div>
                         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">To</h3>
-                        <p className="text-slate-900">HOD, Operations, EAG, MD, Finance</p>
+                        <p className="text-slate-900">HOD, Administrative Department, Operations, EAG, MD</p>
                     </div>
                 </div>
 
@@ -290,14 +292,24 @@ export default function MemoView() {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     {actionType === 'resubmit' ? (
-                      <div className="space-y-2">
-                        <Label>New Content</Label>
-                        <Textarea 
-                          value={resubmitContent} 
-                          onChange={(e) => setResubmitContent(e.target.value)}
-                          className="min-h-[200px]"
-                          data-testid="textarea-resubmit-content"
-                        />
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Subject / Title</Label>
+                          <Input
+                            value={resubmitTitle}
+                            onChange={(e) => setResubmitTitle(e.target.value)}
+                            data-testid="input-resubmit-title"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Memo Content</Label>
+                          <Textarea 
+                            value={resubmitContent} 
+                            onChange={(e) => setResubmitContent(e.target.value)}
+                            className="min-h-[200px]"
+                            data-testid="textarea-resubmit-content"
+                          />
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-2">

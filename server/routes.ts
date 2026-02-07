@@ -401,7 +401,7 @@ export async function registerRoutes(
 
   app.patch("/api/memos/:id/resubmit", requireAuth, async (req, res) => {
     try {
-      const { content } = req.body;
+      const { content, title } = req.body;
       const memo = await storage.getMemoByMemoId(req.params.id);
       
       if (!memo) {
@@ -416,12 +416,17 @@ export async function registerRoutes(
         signature: undefined
       }));
 
-      const updatedMemo = await storage.updateMemo(memo.id, {
+      const updateData: any = {
         content,
         status: 'Pending HOD',
         currentHandler: 'HOD',
         workflow: resetWorkflow
-      });
+      };
+      if (title) {
+        updateData.title = title;
+      }
+
+      const updatedMemo = await storage.updateMemo(memo.id, updateData);
 
       await storage.createAuditLog({
         action: 'Resubmit Memo',

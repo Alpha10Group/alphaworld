@@ -70,10 +70,10 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ comment }),
       }),
-    resubmit: (id: string, content: string) =>
+    resubmit: (id: string, content: string, title?: string) =>
       fetchAPI(`/memos/${id}/resubmit`, {
         method: 'PATCH',
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, title }),
       }),
   },
 
