@@ -4,8 +4,8 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const entityEnum = z.enum(['Alpha10 Fund Management', 'Alpha10 Advisory', 'Alpha10 Global Market Limited']);
-export const roleEnum = z.enum(['Initiator', 'HOD', 'Operations', 'EAG', 'MD', 'Finance', 'IT', 'Risk']);
-export const memoStatusEnum = z.enum(['Draft', 'Pending HOD', 'Pending Operations', 'Pending EAG', 'Pending MD', 'Pending Finance', 'Approved', 'Rejected']);
+export const roleEnum = z.enum(['Initiator', 'HOD', 'Administrative Department', 'Operations', 'EAG', 'MD', 'Finance', 'IT', 'Risk']);
+export const memoStatusEnum = z.enum(['Draft', 'Pending HOD', 'Pending Administrative Department', 'Pending Operations', 'Pending EAG', 'Pending MD', 'Approved', 'Rejected']);
 export const issueStatusEnum = z.enum(['Open', 'In Progress', 'Resolved']);
 export const ticketStatusEnum = z.enum(['Open', 'In Progress', 'Resolved', 'Closed']);
 export const ticketPriorityEnum = z.enum(['Low', 'Medium', 'High', 'Critical']);

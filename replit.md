@@ -4,7 +4,7 @@
 
 NexusFlow is an enterprise workflow automation platform designed for internal operations at Alpha10 group companies. The application provides three core workflow modules:
 
-1. **Memo Approvals** - Multi-step approval workflows with role-based routing (HOD → Operations → EAG → MD → Finance)
+1. **Memo Approvals** - Multi-step approval workflows with role-based routing (HOD → Administrative Department → Operations → EAG → MD)
 2. **Issue Tracker** - Internal issue reporting and resolution tracking with department assignments
 3. **IT Tickets** - IT support ticket management with priority levels and status tracking
 
@@ -47,7 +47,7 @@ Preferred communication style: Simple, everyday language.
 
 **Entity-Scoped Multi-tenancy**: Data is filtered by selected business entity at the application level rather than database level. Users select an entity at login which scopes all subsequent queries.
 
-**Role-Based Workflow**: Memos follow a configurable approval chain with roles (Initiator, HOD, Operations, EAG, MD, Finance, IT, Risk). Each step captures approver signature and comments.
+**Role-Based Workflow**: Memos follow a configurable approval chain: Initiator → HOD → Administrative Department → Operations → EAG → MD. Each step captures approver signature and comments.
 
 **Unified Build**: Production build bundles both frontend (Vite) and backend (esbuild) into `dist/` directory for single-process deployment.
 

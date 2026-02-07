@@ -218,10 +218,10 @@ export async function registerRoutes(
         entity: req.session.entity!,
         workflow: [
           { role: 'HOD', status: 'Pending' },
+          { role: 'Administrative Department', status: 'Pending' },
           { role: 'Operations', status: 'Pending' },
           { role: 'EAG', status: 'Pending' },
           { role: 'MD', status: 'Pending' },
-          { role: 'Finance', status: 'Pending' },
         ],
         attachments: []
       };

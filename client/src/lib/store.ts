@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type Entity = 'Alpha10 Fund Management' | 'Alpha10 Advisory' | 'Alpha10 Global Market Limited';
-export type Role = 'Initiator' | 'HOD' | 'Operations' | 'EAG' | 'MD' | 'Finance' | 'IT' | 'Risk';
+export type Role = 'Initiator' | 'HOD' | 'Administrative Department' | 'Operations' | 'EAG' | 'MD' | 'Finance' | 'IT' | 'Risk';
 
 export type User = {
   id: number;
@@ -14,7 +14,7 @@ export type User = {
   phone?: string;
 };
 
-export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Operations' | 'Pending EAG' | 'Pending MD' | 'Pending Finance' | 'Approved' | 'Rejected';
+export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Administrative Department' | 'Pending Operations' | 'Pending EAG' | 'Pending MD' | 'Approved' | 'Rejected';
 
 export type Memo = {
   id: number;
