@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, json, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, json, serial, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -47,7 +47,12 @@ export const memos = pgTable("memos", {
   }>>(),
   attachments: json("attachments").notNull().$type<Array<{ originalName: string; url: string }>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("memos_entity_idx").on(table.entity),
+  index("memos_status_idx").on(table.status),
+  index("memos_entity_status_idx").on(table.entity, table.status),
+  index("memos_created_at_idx").on(table.createdAt),
+]);
 
 export const issues = pgTable("issues", {
   id: serial("id").primaryKey(),
@@ -68,7 +73,12 @@ export const issues = pgTable("issues", {
   }>>(),
   attachments: json("issue_attachments").notNull().$type<Array<{ originalName: string; url: string }>>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("issues_entity_idx").on(table.entity),
+  index("issues_status_idx").on(table.status),
+  index("issues_entity_status_idx").on(table.entity, table.status),
+  index("issues_created_at_idx").on(table.createdAt),
+]);
 
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
@@ -86,7 +96,13 @@ export const tickets = pgTable("tickets", {
   }>>(),
   attachments: json("ticket_attachments").notNull().$type<Array<{ originalName: string; url: string }>>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("tickets_entity_idx").on(table.entity),
+  index("tickets_status_idx").on(table.status),
+  index("tickets_priority_idx").on(table.priority),
+  index("tickets_entity_status_idx").on(table.entity, table.status),
+  index("tickets_created_at_idx").on(table.createdAt),
+]);
 
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -96,7 +112,10 @@ export const auditLogs = pgTable("audit_logs", {
   entity: text("entity"),
   details: text("details").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
+}, (table) => [
+  index("audit_logs_entity_idx").on(table.entity),
+  index("audit_logs_timestamp_idx").on(table.timestamp),
+]);
 
 export const notificationSettings = pgTable("notification_settings", {
   id: serial("id").primaryKey(),
