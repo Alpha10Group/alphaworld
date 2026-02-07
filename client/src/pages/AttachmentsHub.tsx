@@ -1,5 +1,5 @@
 import Sidebar from "@/components/layout/Sidebar";
-import { Memo } from "@/lib/store";
+import { Memo, Issue, Ticket } from "@/lib/store";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { api } from "@/lib/api";
 
 export default function AttachmentsHub() {
   const [memos, setMemos] = useState<Memo[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -18,8 +20,14 @@ export default function AttachmentsHub() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const memosData = await api.memos.getAll();
+        const [memosData, issuesData, ticketsData] = await Promise.all([
+          api.memos.getAll(),
+          api.issues.getAll(),
+          api.tickets.getAll()
+        ]);
         setMemos(memosData);
+        setIssues(issuesData);
+        setTickets(ticketsData);
       } catch (error) {
         console.error('Failed to fetch attachments:', error);
       } finally {
@@ -29,7 +37,7 @@ export default function AttachmentsHub() {
     fetchData();
   }, []);
 
-  const allAttachments = memos.flatMap(m => 
+  const memoAttachments = memos.flatMap(m => 
     (m.attachments || []).map(a => ({ 
       name: a.originalName, 
       url: a.url,
@@ -38,7 +46,31 @@ export default function AttachmentsHub() {
       id: m.memoId, 
       type: 'memo' 
     }))
-  ).filter(a => 
+  );
+
+  const issueAttachments = issues.flatMap(i => 
+    (i.attachments || []).map(a => ({ 
+      name: a.originalName, 
+      url: a.url,
+      source: `Issue: ${i.issueId}`, 
+      date: i.date, 
+      id: i.issueId, 
+      type: 'issue' 
+    }))
+  );
+
+  const ticketAttachments = tickets.flatMap(t => 
+    (t.attachments || []).map(a => ({ 
+      name: a.originalName, 
+      url: a.url,
+      source: `Ticket: ${t.ticketId}`, 
+      date: new Date().toISOString().split('T')[0], 
+      id: t.ticketId, 
+      type: 'ticket' 
+    }))
+  );
+
+  const allAttachments = [...memoAttachments, ...issueAttachments, ...ticketAttachments].filter(a => 
     a.name.toLowerCase().includes(search.toLowerCase()) || 
     a.source.toLowerCase().includes(search.toLowerCase())
   );

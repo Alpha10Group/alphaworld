@@ -66,6 +66,7 @@ export const issues = pgTable("issues", {
     comment?: string;
     date?: string;
   }>>(),
+  attachments: json("issue_attachments").notNull().$type<Array<{ originalName: string; url: string }>>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -83,6 +84,7 @@ export const tickets = pgTable("tickets", {
     text: string;
     date: string;
   }>>(),
+  attachments: json("ticket_attachments").notNull().$type<Array<{ originalName: string; url: string }>>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

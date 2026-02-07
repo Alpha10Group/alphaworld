@@ -79,7 +79,7 @@ export const api = {
 
   issues: {
     getAll: () => fetchAPI('/issues'),
-    create: (issue: { title: string; description: string; cost: string; cause: string; date: string; department: string; assignedTo: Role[] }) =>
+    create: (issue: { title: string; description: string; cost: string; cause: string; date: string; department: string; assignedTo: Role[]; attachments: Array<{ originalName: string; url: string }> }) =>
       fetchAPI('/issues', {
         method: 'POST',
         body: JSON.stringify(issue),
@@ -93,7 +93,7 @@ export const api = {
 
   tickets: {
     getAll: () => fetchAPI('/tickets'),
-    create: (ticket: { title: string; priority: string; description: string; assignedTo: string }) =>
+    create: (ticket: { title: string; priority: string; description: string; assignedTo: string; attachments: Array<{ originalName: string; url: string }> }) =>
       fetchAPI('/tickets', {
         method: 'POST',
         body: JSON.stringify(ticket),

@@ -54,6 +54,7 @@ export type Issue = {
     comment?: string;
     date?: string;
   }[];
+  attachments: Array<{ originalName: string; url: string }>;
 };
 
 export type Ticket = {
@@ -70,6 +71,7 @@ export type Ticket = {
     text: string;
     date: string;
   }[];
+  attachments: Array<{ originalName: string; url: string }>;
 };
 
 interface AppState {

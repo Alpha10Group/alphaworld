@@ -524,7 +524,8 @@ export async function registerRoutes(
         issueId,
         status: 'Open',
         entity: req.session.entity!,
-        reviews: []
+        reviews: [],
+        attachments: req.body.attachments || []
       };
       
       const issue = await storage.createIssue(issueData);
@@ -600,7 +601,8 @@ export async function registerRoutes(
         ticketId,
         status: 'Open',
         entity: req.session.entity!,
-        comments: []
+        comments: [],
+        attachments: req.body.attachments || []
       };
       
       const ticket = await storage.createTicket(ticketData);
