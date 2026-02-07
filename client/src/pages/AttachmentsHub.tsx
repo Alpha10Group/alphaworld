@@ -38,32 +38,38 @@ export default function AttachmentsHub() {
     fetchData();
   }, []);
 
-  const normalizeAttachment = (a: any) => {
+  const normalizeAttachment = (a: any): { name: string; url: string } | null => {
     if (typeof a === 'string') {
-      return { name: a, url: `/uploads/${a}` };
+      return null;
     }
-    return { name: a.originalName || a.name || 'Unknown', url: a.url || '' };
+    if (a && a.url) {
+      return { name: a.originalName || a.name || 'Unknown', url: a.url };
+    }
+    return null;
   };
 
   const memoAttachments = memos.flatMap(m => 
     (m.attachments || []).map(a => {
       const norm = normalizeAttachment(a);
+      if (!norm) return null;
       return { ...norm, source: `Memo: ${m.memoId}`, date: m.date, id: m.memoId, type: 'memo' };
-    })
+    }).filter(Boolean) as any[]
   );
 
   const issueAttachments = issues.flatMap(i => 
     (i.attachments || []).map(a => {
       const norm = normalizeAttachment(a);
+      if (!norm) return null;
       return { ...norm, source: `Issue: ${i.issueId}`, date: i.date, id: i.issueId, type: 'issue' };
-    })
+    }).filter(Boolean) as any[]
   );
 
   const ticketAttachments = tickets.flatMap(t => 
     (t.attachments || []).map(a => {
       const norm = normalizeAttachment(a);
+      if (!norm) return null;
       return { ...norm, source: `Ticket: ${t.ticketId}`, date: new Date().toISOString().split('T')[0], id: t.ticketId, type: 'ticket' };
-    })
+    }).filter(Boolean) as any[]
   );
 
   const allAttachments = [...memoAttachments, ...issueAttachments, ...ticketAttachments].filter(a => 
@@ -77,8 +83,12 @@ export default function AttachmentsHub() {
       return;
     }
     toast({ title: "Downloading", description: `Starting download of ${allAttachments.length} file(s)...` });
-    await downloadMultipleFiles(allAttachments.map(a => ({ url: a.url, name: a.name })));
-    toast({ title: "Complete", description: `${allAttachments.length} file(s) downloaded.` });
+    const result = await downloadMultipleFiles(allAttachments.map(a => ({ url: a.url, name: a.name })));
+    if (result.failed > 0) {
+      toast({ title: "Download Complete", description: `${result.success} downloaded, ${result.failed} failed.`, variant: "destructive" });
+    } else {
+      toast({ title: "Download Complete", description: `All ${result.success} file(s) downloaded successfully.` });
+    }
   };
 
   return (
