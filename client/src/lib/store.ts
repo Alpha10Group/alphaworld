@@ -34,7 +34,7 @@ export type Memo = {
     comment?: string;
     signature?: string;
   }[];
-  attachments: string[];
+  attachments: Array<{ originalName: string; url: string }>;
 };
 
 export type Issue = {

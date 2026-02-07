@@ -55,7 +55,7 @@ export const api = {
   memos: {
     getAll: () => fetchAPI('/memos'),
     getById: (id: string) => fetchAPI(`/memos/${id}`),
-    create: (memo: { title: string; content: string; initiator: string; department: string; date: string; attachments: string[] }) =>
+    create: (memo: { title: string; content: string; initiator: string; department: string; date: string; attachments: Array<{ originalName: string; url: string }> }) =>
       fetchAPI('/memos', {
         method: 'POST',
         body: JSON.stringify(memo),
@@ -70,10 +70,10 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ comment }),
       }),
-    resubmit: (id: string, content: string, title?: string) =>
+    resubmit: (id: string, content: string, title?: string, attachments?: Array<{ originalName: string; url: string }>) =>
       fetchAPI(`/memos/${id}/resubmit`, {
         method: 'PATCH',
-        body: JSON.stringify({ content, title }),
+        body: JSON.stringify({ content, title, attachments }),
       }),
   },
 

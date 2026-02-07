@@ -6,6 +6,37 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 import { z } from "zod";
 import { sendEmailNotification, sendSMSNotification, type NotificationPayload } from "./notifications";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const fileStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({
+  storage: fileStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.xlsx', '.xls', '.csv', '.txt'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${ext} not allowed`));
+    }
+  }
+});
 
 declare module 'express-session' {
   interface SessionData {
@@ -29,6 +60,9 @@ export async function registerRoutes(
     }
   }));
 
+  const express = await import('express');
+  app.use('/uploads', express.default.static(uploadsDir));
+
   // Auth middleware
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.session.userId) {
@@ -36,6 +70,24 @@ export async function registerRoutes(
     }
     next();
   };
+
+  app.post("/api/upload", requireAuth, upload.array('files', 10), (req: any, res) => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
+      const fileInfos = files.map(f => ({
+        originalName: f.originalname,
+        filename: f.filename,
+        url: `/uploads/${f.filename}`,
+        size: f.size
+      }));
+      res.json(fileInfos);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
@@ -223,7 +275,7 @@ export async function registerRoutes(
           { role: 'EAG', status: 'Pending' },
           { role: 'MD', status: 'Pending' },
         ],
-        attachments: []
+        attachments: req.body.attachments || []
       };
       
       const memo = await storage.createMemo(memoData);
@@ -401,7 +453,7 @@ export async function registerRoutes(
 
   app.patch("/api/memos/:id/resubmit", requireAuth, async (req, res) => {
     try {
-      const { content, title } = req.body;
+      const { content, title, attachments } = req.body;
       const memo = await storage.getMemoByMemoId(req.params.id);
       
       if (!memo) {
@@ -424,6 +476,9 @@ export async function registerRoutes(
       };
       if (title) {
         updateData.title = title;
+      }
+      if (attachments) {
+        updateData.attachments = attachments;
       }
 
       const updatedMemo = await storage.updateMemo(memo.id, updateData);

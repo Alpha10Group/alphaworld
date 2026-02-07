@@ -54,7 +54,7 @@ async function seed() {
           { role: 'EAG', status: 'Pending' },
           { role: 'MD', status: 'Pending' },
         ],
-        attachments: ['budget_v1.pdf'],
+        attachments: [{ originalName: 'budget_v1.pdf', url: '/uploads/budget_v1.pdf' }],
       },
       {
         memoId: 'MEM-2024-002',
@@ -73,7 +73,7 @@ async function seed() {
           { role: 'EAG', status: 'Pending' },
           { role: 'MD', status: 'Pending' },
         ],
-        attachments: ['quote_apple.pdf'],
+        attachments: [{ originalName: 'quote_apple.pdf', url: '/uploads/quote_apple.pdf' }],
       }
     ];
 

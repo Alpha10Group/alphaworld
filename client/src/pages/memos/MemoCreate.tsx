@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Upload, Send } from "lucide-react";
+import { ArrowLeft, Upload, Send, X, FileIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
-import { useState } from "react";
-import { showBrowserNotification, requestNotificationPermission } from "@/lib/notifications";
+import { useState, useRef } from "react";
+import { showBrowserNotification } from "@/lib/notifications";
 
 type MemoFormValues = {
   title: string;
@@ -19,17 +19,60 @@ type MemoFormValues = {
   content: string;
 };
 
+type UploadedFile = {
+  originalName: string;
+  url: string;
+};
+
 export default function MemoCreate() {
   const { currentUser } = useStore();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { register, handleSubmit, formState: { errors } } = useForm<MemoFormValues>({
     defaultValues: {
       department: "Marketing"
     }
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(f => formData.append('files', f));
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Upload failed');
+      }
+
+      const uploaded = await res.json();
+      setUploadedFiles(prev => [...prev, ...uploaded.map((f: any) => ({ originalName: f.originalName, url: f.url }))]);
+      toast({ title: "Files Uploaded", description: `${uploaded.length} file(s) uploaded successfully.` });
+    } catch (error: any) {
+      toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const onSubmit = async (data: MemoFormValues) => {
     if (!currentUser) return;
@@ -42,7 +85,7 @@ export default function MemoCreate() {
         content: data.content,
         initiator: currentUser.name,
         date: new Date().toISOString().split('T')[0],
-        attachments: []
+        attachments: uploadedFiles
       });
       
       toast({
@@ -50,7 +93,6 @@ export default function MemoCreate() {
         description: "Your memo has been routed to the HOD for approval.",
       });
 
-      // Show browser notification
       showBrowserNotification("Memo Submitted Successfully", {
         body: `Your memo "${data.title}" has been submitted and routed to HOD for approval.`,
         tag: 'memo-created'
@@ -142,11 +184,39 @@ export default function MemoCreate() {
 
                 <div className="space-y-2">
                   <Label>Attachments</Label>
-                  <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer text-slate-500 hover:text-slate-900">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    multiple
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx,.xls,.csv,.txt"
+                    className="hidden"
+                    data-testid="input-file-upload"
+                  />
+                  <div 
+                    className="border-2 border-dashed border-slate-200 rounded-lg p-8 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer text-slate-500 hover:text-slate-900"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="w-8 h-8 opacity-50" />
-                    <p className="text-sm font-medium">Click to upload files (Mock)</p>
-                    <p className="text-xs opacity-50">PDF, DOCX, PNG up to 10MB</p>
+                    <p className="text-sm font-medium">{uploading ? 'Uploading...' : 'Click to upload files'}</p>
+                    <p className="text-xs opacity-50">PDF, DOCX, PNG, JPG, XLSX, CSV, TXT up to 10MB</p>
                   </div>
+
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {uploadedFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200" data-testid={`uploaded-file-${idx}`}>
+                          <div className="flex items-center gap-2">
+                            <FileIcon className="w-4 h-4 text-slate-500" />
+                            <span className="text-sm font-medium text-slate-700">{file.originalName}</span>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => removeFile(idx)} data-testid={`button-remove-file-${idx}`}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
@@ -162,7 +232,7 @@ export default function MemoCreate() {
                   <Button 
                     type="submit" 
                     className="gap-2 bg-blue-600 hover:bg-blue-700"
-                    disabled={submitting}
+                    disabled={submitting || uploading}
                     data-testid="button-submit"
                   >
                     <Send className="w-4 h-4" /> {submitting ? 'Submitting...' : 'Submit Memo'}

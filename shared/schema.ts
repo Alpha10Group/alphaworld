@@ -45,7 +45,7 @@ export const memos = pgTable("memos", {
     comment?: string;
     signature?: string;
   }>>(),
-  attachments: json("attachments").notNull().$type<string[]>(),
+  attachments: json("attachments").notNull().$type<Array<{ originalName: string; url: string }>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

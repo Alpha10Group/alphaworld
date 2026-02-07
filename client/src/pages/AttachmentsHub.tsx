@@ -30,8 +30,9 @@ export default function AttachmentsHub() {
   }, []);
 
   const allAttachments = memos.flatMap(m => 
-    m.attachments.map(a => ({ 
-      name: a, 
+    (m.attachments || []).map(a => ({ 
+      name: a.originalName, 
+      url: a.url,
       source: `Memo: ${m.memoId}`, 
       date: m.date, 
       id: m.memoId, 

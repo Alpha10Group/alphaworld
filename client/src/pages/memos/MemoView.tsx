@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Download, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, CheckCircle2, Upload, X, FileIcon, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { api } from "@/lib/api";
+
+type UploadedFile = { originalName: string; url: string };
 
 export default function MemoView() {
   const [, params] = useRoute("/memos/:id");
@@ -40,6 +42,9 @@ export default function MemoView() {
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'resubmit'>('approve');
   const [resubmitContent, setResubmitContent] = useState("");
   const [resubmitTitle, setResubmitTitle] = useState("");
+  const [resubmitAttachments, setResubmitAttachments] = useState<UploadedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchMemo = async () => {
@@ -49,6 +54,7 @@ export default function MemoView() {
         setMemo(data);
         setResubmitContent(data.content);
         setResubmitTitle(data.title);
+        setResubmitAttachments(data.attachments || []);
       } catch (error) {
         console.error('Failed to fetch memo:', error);
         toast({
@@ -77,6 +83,36 @@ export default function MemoView() {
   const canAct = memo.currentHandler === currentUser.role && !['Approved', 'Rejected'].includes(memo.status);
   const canResubmit = memo.status === 'Rejected' && memo.initiator === currentUser.name;
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(f => formData.append('files', f));
+
+      const res = await fetch('/api/upload', { method: 'POST', body: formData, credentials: 'include' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Upload failed');
+      }
+
+      const uploaded = await res.json();
+      setResubmitAttachments(prev => [...prev, ...uploaded.map((f: any) => ({ originalName: f.originalName, url: f.url }))]);
+      toast({ title: "Files Uploaded", description: `${uploaded.length} file(s) uploaded successfully.` });
+    } catch (error: any) {
+      toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setResubmitAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAction = async () => {
     setIsProcessing(true);
     try {
@@ -87,7 +123,7 @@ export default function MemoView() {
         await api.memos.reject(memo.memoId, actionComment);
         toast({ title: "Rejected", description: "Memo has been rejected and returned to initiator.", variant: "destructive" });
       } else if (actionType === 'resubmit') {
-        await api.memos.resubmit(memo.memoId, resubmitContent, resubmitTitle);
+        await api.memos.resubmit(memo.memoId, resubmitContent, resubmitTitle, resubmitAttachments);
         toast({ title: "Resubmitted", description: "Memo has been updated and sent back to HOD." });
       }
       
@@ -150,7 +186,13 @@ export default function MemoView() {
                {canResubmit && (
                   <Button 
                     className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                    onClick={() => { setActionType('resubmit'); setResubmitContent(memo.content); setResubmitTitle(memo.title); setIsDialogOpen(true); }}
+                    onClick={() => { 
+                      setActionType('resubmit'); 
+                      setResubmitContent(memo.content); 
+                      setResubmitTitle(memo.title); 
+                      setResubmitAttachments(memo.attachments || []); 
+                      setIsDialogOpen(true); 
+                    }}
                     data-testid="button-resubmit"
                   >
                     Revise & Resubmit
@@ -220,6 +262,34 @@ export default function MemoView() {
                     ))}
                 </div>
 
+                {memo.attachments && memo.attachments.length > 0 && (
+                    <div>
+                        <h3 className="font-heading font-semibold text-lg mb-3">Attachments</h3>
+                        <div className="space-y-2">
+                            {memo.attachments.map((att, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200" data-testid={`memo-attachment-${idx}`}>
+                                    <div className="flex items-center gap-2">
+                                        <FileIcon className="w-4 h-4 text-slate-500" />
+                                        <span className="text-sm font-medium text-slate-700">{att.originalName}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <a href={att.url} target="_blank" rel="noopener noreferrer">
+                                            <Button type="button" variant="ghost" size="sm" className="h-8 gap-1" data-testid={`button-view-attachment-${idx}`}>
+                                                <ExternalLink className="w-4 h-4" /> View
+                                            </Button>
+                                        </a>
+                                        <a href={att.url} download={att.originalName}>
+                                            <Button type="button" variant="ghost" size="sm" className="h-8 gap-1" data-testid={`button-download-attachment-${idx}`}>
+                                                <Download className="w-4 h-4" /> Download
+                                            </Button>
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div>
                     <h3 className="font-heading font-semibold text-lg mb-4">Approval History</h3>
                     <div className="space-y-6">
@@ -276,7 +346,7 @@ export default function MemoView() {
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                       {actionType === 'approve' ? 'Approve Memo' : 
@@ -287,7 +357,7 @@ export default function MemoView() {
                             ? 'Please provide your remarks and digital signature to proceed.' 
                             : actionType === 'reject'
                             ? 'Please provide a reason for rejection.'
-                            : 'Update the content of your memo and resubmit for approval.'}
+                            : 'Update your memo details, attachments, and resubmit for approval.'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -309,6 +379,45 @@ export default function MemoView() {
                             className="min-h-[200px]"
                             data-testid="textarea-resubmit-content"
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Attachments</Label>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            multiple
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx,.xls,.csv,.txt"
+                            className="hidden"
+                            data-testid="input-resubmit-file-upload"
+                          />
+                          
+                          {resubmitAttachments.length > 0 && (
+                            <div className="space-y-2">
+                              {resubmitAttachments.map((file, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200" data-testid={`resubmit-attachment-${idx}`}>
+                                  <div className="flex items-center gap-2">
+                                    <FileIcon className="w-4 h-4 text-slate-500" />
+                                    <span className="text-sm font-medium text-slate-700">{file.originalName}</span>
+                                  </div>
+                                  <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => removeAttachment(idx)} data-testid={`button-remove-resubmit-file-${idx}`}>
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            className="w-full gap-2 mt-2"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            data-testid="button-add-attachment"
+                          >
+                            <Upload className="w-4 h-4" /> {uploading ? 'Uploading...' : 'Add Files'}
+                          </Button>
                         </div>
                       </div>
                     ) : (
@@ -339,7 +448,7 @@ export default function MemoView() {
                     <Button 
                         variant={actionType === 'reject' ? 'destructive' : 'default'}
                         onClick={handleAction}
-                        disabled={isProcessing}
+                        disabled={isProcessing || uploading}
                         data-testid="button-confirm-action"
                     >
                         {isProcessing ? 'Processing...' : 
