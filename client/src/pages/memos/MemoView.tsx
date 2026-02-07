@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Download, CheckCircle2, Upload, X, FileIcon, ExternalLink } from "lucide-react";
+import { downloadFile } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -278,11 +279,9 @@ export default function MemoView() {
                                                 <ExternalLink className="w-4 h-4" /> View
                                             </Button>
                                         </a>
-                                        <a href={att.url} download={att.originalName}>
-                                            <Button type="button" variant="ghost" size="sm" className="h-8 gap-1" data-testid={`button-download-attachment-${idx}`}>
-                                                <Download className="w-4 h-4" /> Download
-                                            </Button>
-                                        </a>
+                                        <Button type="button" variant="ghost" size="sm" className="h-8 gap-1" data-testid={`button-download-attachment-${idx}`} onClick={() => downloadFile(att.url, att.originalName)}>
+                                            <Download className="w-4 h-4" /> Download
+                                        </Button>
                                     </div>
                                 </div>
                             ))}

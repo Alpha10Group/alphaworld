@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Download, FileIcon, Search, ExternalLink } from "lucide-react";
+import { downloadFile } from "@/lib/download";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -147,12 +148,14 @@ export default function AttachmentsHub() {
                         <TableCell className="text-muted-foreground text-sm">{file.date}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => downloadFile(file.url, file.name)} data-testid={`button-download-${index}`}>
                               <Download className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
+                            <a href={file.url} target="_blank" rel="noopener noreferrer">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid={`button-view-${index}`}>
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </a>
                           </div>
                         </TableCell>
                       </TableRow>
