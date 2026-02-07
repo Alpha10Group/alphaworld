@@ -70,6 +70,23 @@ export async function registerRoutes(
   const express = await import('express');
   app.use('/uploads', express.default.static(uploadsDir));
 
+  app.get("/api/download", (req: any, res) => {
+    const filePath = req.query.path as string;
+    const fileName = req.query.name as string;
+    if (!filePath) {
+      return res.status(400).json({ message: "Missing file path" });
+    }
+    const fullPath = path.join(process.cwd(), filePath);
+    if (!fullPath.startsWith(uploadsDir)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ message: "File not found" });
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName || path.basename(fullPath))}"`);
+    res.sendFile(fullPath);
+  });
+
   // Auth middleware
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.session.userId) {

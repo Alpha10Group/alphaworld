@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Download, FileIcon, Search, ExternalLink } from "lucide-react";
-import { downloadFile } from "@/lib/download";
+import { downloadFile, downloadMultipleFiles } from "@/lib/download";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -71,11 +71,14 @@ export default function AttachmentsHub() {
     (a.source || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDownloadAll = () => {
-    toast({
-      title: "Bulk Download Started",
-      description: `Preparing ${allAttachments.length} files for download...`,
-    });
+  const handleDownloadAll = async () => {
+    if (allAttachments.length === 0) {
+      toast({ title: "No Files", description: "No attachments to download.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Downloading", description: `Starting download of ${allAttachments.length} file(s)...` });
+    await downloadMultipleFiles(allAttachments.map(a => ({ url: a.url, name: a.name })));
+    toast({ title: "Complete", description: `${allAttachments.length} file(s) downloaded.` });
   };
 
   return (
