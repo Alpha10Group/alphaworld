@@ -37,42 +37,37 @@ export default function AttachmentsHub() {
     fetchData();
   }, []);
 
+  const normalizeAttachment = (a: any) => {
+    if (typeof a === 'string') {
+      return { name: a, url: `/uploads/${a}` };
+    }
+    return { name: a.originalName || a.name || 'Unknown', url: a.url || '' };
+  };
+
   const memoAttachments = memos.flatMap(m => 
-    (m.attachments || []).map(a => ({ 
-      name: a.originalName, 
-      url: a.url,
-      source: `Memo: ${m.memoId}`, 
-      date: m.date, 
-      id: m.memoId, 
-      type: 'memo' 
-    }))
+    (m.attachments || []).map(a => {
+      const norm = normalizeAttachment(a);
+      return { ...norm, source: `Memo: ${m.memoId}`, date: m.date, id: m.memoId, type: 'memo' };
+    })
   );
 
   const issueAttachments = issues.flatMap(i => 
-    (i.attachments || []).map(a => ({ 
-      name: a.originalName, 
-      url: a.url,
-      source: `Issue: ${i.issueId}`, 
-      date: i.date, 
-      id: i.issueId, 
-      type: 'issue' 
-    }))
+    (i.attachments || []).map(a => {
+      const norm = normalizeAttachment(a);
+      return { ...norm, source: `Issue: ${i.issueId}`, date: i.date, id: i.issueId, type: 'issue' };
+    })
   );
 
   const ticketAttachments = tickets.flatMap(t => 
-    (t.attachments || []).map(a => ({ 
-      name: a.originalName, 
-      url: a.url,
-      source: `Ticket: ${t.ticketId}`, 
-      date: new Date().toISOString().split('T')[0], 
-      id: t.ticketId, 
-      type: 'ticket' 
-    }))
+    (t.attachments || []).map(a => {
+      const norm = normalizeAttachment(a);
+      return { ...norm, source: `Ticket: ${t.ticketId}`, date: new Date().toISOString().split('T')[0], id: t.ticketId, type: 'ticket' };
+    })
   );
 
   const allAttachments = [...memoAttachments, ...issueAttachments, ...ticketAttachments].filter(a => 
-    a.name.toLowerCase().includes(search.toLowerCase()) || 
-    a.source.toLowerCase().includes(search.toLowerCase())
+    (a.name || '').toLowerCase().includes(search.toLowerCase()) || 
+    (a.source || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDownloadAll = () => {
