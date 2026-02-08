@@ -75,6 +75,11 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ content, title, attachments }),
       }),
+    deleteAttachment: (id: number, attachmentUrl: string) =>
+      fetchAPI(`/memos/${id}/attachments`, {
+        method: 'DELETE',
+        body: JSON.stringify({ attachmentUrl }),
+      }),
   },
 
   issues: {
@@ -90,6 +95,11 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ comment }),
       }),
+    deleteAttachment: (id: number, attachmentUrl: string) =>
+      fetchAPI(`/issues/${id}/attachments`, {
+        method: 'DELETE',
+        body: JSON.stringify({ attachmentUrl }),
+      }),
   },
 
   tickets: {
@@ -104,6 +114,11 @@ export const api = {
       fetchAPI(`/tickets/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status, comment }),
+      }),
+    deleteAttachment: (id: number, attachmentUrl: string) =>
+      fetchAPI(`/tickets/${id}/attachments`, {
+        method: 'DELETE',
+        body: JSON.stringify({ attachmentUrl }),
       }),
   },
 

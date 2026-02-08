@@ -534,6 +534,42 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/memos/:id/attachments", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (!currentUser || currentUser.role !== 'IT') {
+        return res.status(403).json({ message: "Only IT department can delete attachments" });
+      }
+      const memo = await storage.getMemo(parseInt(req.params.id));
+      if (!memo) {
+        return res.status(404).json({ message: "Memo not found" });
+      }
+      const { attachmentUrl } = req.body;
+      const updatedAttachments = (memo.attachments || []).filter(
+        (att: any) => att.url !== attachmentUrl
+      );
+      const updated = await storage.updateMemo(memo.id, { attachments: updatedAttachments });
+
+      const filename = attachmentUrl.split('/').pop();
+      if (filename) {
+        const filePath = path.join(uploadsDir, filename);
+        fs.unlink(filePath, () => {});
+      }
+
+      await storage.createAuditLog({
+        action: 'Delete Attachment',
+        user: currentUser.name,
+        role: currentUser.role,
+        entity: req.session.entity,
+        details: `Deleted attachment from memo ${memo.memoId}`
+      });
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Issue routes
   app.get("/api/issues", requireAuth, async (req, res) => {
     try {
@@ -636,6 +672,42 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/issues/:id/attachments", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (!currentUser || currentUser.role !== 'IT') {
+        return res.status(403).json({ message: "Only IT department can delete attachments" });
+      }
+      const issue = await storage.getIssue(parseInt(req.params.id));
+      if (!issue) {
+        return res.status(404).json({ message: "Issue not found" });
+      }
+      const { attachmentUrl } = req.body;
+      const updatedAttachments = (issue.attachments || []).filter(
+        (att: any) => att.url !== attachmentUrl
+      );
+      const updated = await storage.updateIssue(issue.id, { attachments: updatedAttachments });
+
+      const filename = attachmentUrl.split('/').pop();
+      if (filename) {
+        const filePath = path.join(uploadsDir, filename);
+        fs.unlink(filePath, () => {});
+      }
+
+      await storage.createAuditLog({
+        action: 'Delete Attachment',
+        user: currentUser.name,
+        role: currentUser.role,
+        entity: req.session.entity,
+        details: `Deleted attachment from issue ${issue.issueId}`
+      });
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Ticket routes
   app.get("/api/tickets", requireAuth, async (req, res) => {
     try {
@@ -659,6 +731,42 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Ticket not found" });
       }
       res.json(ticket);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/tickets/:id/attachments", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (!currentUser || currentUser.role !== 'IT') {
+        return res.status(403).json({ message: "Only IT department can delete attachments" });
+      }
+      const ticket = await storage.getTicket(parseInt(req.params.id));
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      const { attachmentUrl } = req.body;
+      const updatedAttachments = (ticket.attachments || []).filter(
+        (att: any) => att.url !== attachmentUrl
+      );
+      const updated = await storage.updateTicket(ticket.id, { attachments: updatedAttachments });
+
+      const filename = attachmentUrl.split('/').pop();
+      if (filename) {
+        const filePath = path.join(uploadsDir, filename);
+        fs.unlink(filePath, () => {});
+      }
+
+      await storage.createAuditLog({
+        action: 'Delete Attachment',
+        user: currentUser.name,
+        role: currentUser.role,
+        entity: req.session.entity,
+        details: `Deleted attachment from ticket ${ticket.ticketId}`
+      });
+
+      res.json(updated);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

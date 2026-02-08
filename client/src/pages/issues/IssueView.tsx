@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, FileIcon, ExternalLink, Download, MessageSquare } from "lucide-react";
+import { ArrowLeft, FileIcon, ExternalLink, Download, MessageSquare, Trash2 } from "lucide-react";
 import { downloadFile } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -183,6 +183,27 @@ export default function IssueView() {
                           <Button type="button" variant="ghost" size="sm" className="h-8 gap-1" data-testid={`button-download-attachment-${idx}`} onClick={() => downloadFile(att.url, att.originalName)}>
                             <Download className="w-4 h-4" /> Download
                           </Button>
+                          {currentUser?.role === 'IT' && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              data-testid={`button-delete-attachment-${idx}`}
+                              onClick={async () => {
+                                if (!confirm('Are you sure you want to delete this attachment?')) return;
+                                try {
+                                  const updated = await api.issues.deleteAttachment(issue.id, att.url);
+                                  setIssue(updated);
+                                  toast({ title: "Deleted", description: "Attachment removed successfully." });
+                                } catch (err: any) {
+                                  toast({ title: "Error", description: err.message || "Failed to delete attachment", variant: "destructive" });
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" /> Delete
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
