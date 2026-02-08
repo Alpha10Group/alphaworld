@@ -539,8 +539,8 @@ export async function registerRoutes(
     try {
       const currentUser = await storage.getUser(req.session.userId!);
       const allIssues = await storage.getAllIssues(req.session.entity!);
-      const adminRoles = ['IT', 'MD', 'HOD', 'Operations', 'EAG', 'Administrative Department', 'Risk', 'Finance'];
-      if (currentUser && adminRoles.includes(currentUser.role)) {
+      const issueViewRoles = ['IT', 'Risk'];
+      if (currentUser && issueViewRoles.includes(currentUser.role)) {
         res.json(allIssues);
       } else {
         res.json(allIssues.filter(i => i.createdBy === currentUser?.name));
@@ -641,8 +641,8 @@ export async function registerRoutes(
     try {
       const currentUser = await storage.getUser(req.session.userId!);
       const allTickets = await storage.getAllTickets(req.session.entity!);
-      const adminRoles = ['IT', 'MD', 'HOD', 'Operations', 'EAG', 'Administrative Department', 'Risk', 'Finance'];
-      if (currentUser && adminRoles.includes(currentUser.role)) {
+      const ticketViewRoles = ['IT'];
+      if (currentUser && ticketViewRoles.includes(currentUser.role)) {
         res.json(allTickets);
       } else {
         res.json(allTickets.filter(t => t.createdBy === currentUser?.name));
