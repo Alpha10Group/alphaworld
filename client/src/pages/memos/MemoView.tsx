@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { api } from "@/lib/api";
 
@@ -144,22 +143,156 @@ export default function MemoView() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!pdfRef.current) return;
-    
+    if (!memo) return;
+
     toast({ title: "Generating PDF", description: "Please wait..." });
-    
+
     try {
-      const canvas = await html2canvas(pdfRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text("Alpha10", margin, y);
+      y += 6;
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("INTERNAL MEMO", margin, y);
+
+      pdf.setFontSize(9);
+      pdf.text(`Ref: ${memo.memoId}`, pageWidth - margin, y - 6, { align: "right" });
+      pdf.text(`Date: ${memo.date}`, pageWidth - margin, y, { align: "right" });
+      pdf.setTextColor(0, 0, 0);
+
+      y += 6;
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 10;
+
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("SUBJECT", margin, y);
+      y += 6;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      const titleLines = pdf.splitTextToSize(memo.title, contentWidth);
+      pdf.text(titleLines, margin, y);
+      y += titleLines.length * 7 + 6;
+
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("FROM", margin, y);
+      pdf.text("TO", pageWidth / 2, y);
+      y += 5;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(memo.initiator, margin, y);
+      pdf.text("HOD, Admin Dept, Ops, EAG, MD", pageWidth / 2, y);
+      y += 5;
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(memo.department, margin, y);
+      pdf.setTextColor(0, 0, 0);
+      y += 10;
+
+      pdf.setDrawColor(230, 230, 230);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      const contentLines = pdf.splitTextToSize(memo.content, contentWidth);
+      for (const line of contentLines) {
+        if (y > 270) {
+          pdf.addPage();
+          y = margin;
+        }
+        pdf.text(line, margin, y);
+        y += 5;
+      }
+      y += 8;
+
+      if (memo.attachments && memo.attachments.length > 0) {
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 8;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.text("Attachments", margin, y);
+        y += 6;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        for (const att of memo.attachments) {
+          if (y > 270) { pdf.addPage(); y = margin; }
+          pdf.text(`• ${att.originalName}`, margin + 2, y);
+          y += 5;
+        }
+        y += 4;
+      }
+
+      pdf.setDrawColor(230, 230, 230);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.text("Approval History", margin, y);
+      y += 8;
+
+      for (const step of memo.workflow) {
+        if (y > 255) { pdf.addPage(); y = margin; }
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.text(step.role, margin, y);
+
+        const statusColor = step.status === 'Approved' ? [16, 150, 72] : step.status === 'Rejected' ? [200, 30, 30] : [180, 130, 0];
+        pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+        pdf.setFontSize(9);
+        pdf.text(step.status, pageWidth - margin, y, { align: "right" });
+        pdf.setTextColor(0, 0, 0);
+        y += 5;
+
+        if (step.status !== 'Pending') {
+          pdf.setFont("helvetica", "italic");
+          pdf.setFontSize(9);
+          pdf.setTextColor(80, 80, 80);
+          const comment = `"${step.comment || 'No comments'}"`;
+          const commentLines = pdf.splitTextToSize(comment, contentWidth);
+          pdf.text(commentLines, margin, y);
+          y += commentLines.length * 4 + 3;
+
+          if (step.signature) {
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(`Signed by: ${step.signature}`, margin, y);
+            if (step.date) pdf.text(step.date, pageWidth - margin, y, { align: "right" });
+            y += 5;
+
+            pdf.setFont("times", "italic");
+            pdf.setFontSize(16);
+            pdf.setTextColor(0, 0, 120);
+            pdf.text(step.signature, margin + 5, y);
+            pdf.setTextColor(0, 0, 0);
+            y += 8;
+          }
+        }
+        y += 4;
+      }
+
       pdf.save(`${memo.memoId}_Signed.pdf`);
-      
       toast({ title: "Success", description: "Memo downloaded successfully." });
     } catch (err) {
+      console.error("PDF generation error:", err);
       toast({ title: "Error", description: "Failed to generate PDF", variant: "destructive" });
     }
   };
