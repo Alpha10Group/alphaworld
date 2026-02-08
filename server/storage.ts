@@ -30,7 +30,7 @@ export interface IStorage {
   deleteUser(id: number): Promise<void>;
   
   // Memos
-  getAllMemos(entity: string): Promise<Memo[]>;
+  getAllMemos(entity?: string): Promise<Memo[]>;
   getMemo(id: number): Promise<Memo | undefined>;
   getMemoByMemoId(memoId: string): Promise<Memo | undefined>;
   createMemo(memo: InsertMemo): Promise<Memo>;
@@ -100,9 +100,13 @@ export class PostgresStorage implements IStorage {
   }
 
   // Memos
-  async getAllMemos(entity: string): Promise<Memo[]> {
+  async getAllMemos(entity?: string): Promise<Memo[]> {
+    if (entity) {
+      return await db.select().from(schema.memos)
+        .where(eq(schema.memos.entity, entity))
+        .orderBy(desc(schema.memos.createdAt));
+    }
     return await db.select().from(schema.memos)
-      .where(eq(schema.memos.entity, entity))
       .orderBy(desc(schema.memos.createdAt));
   }
 

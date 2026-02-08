@@ -287,8 +287,17 @@ export async function registerRoutes(
 
   app.post("/api/memos", requireAuth, async (req, res) => {
     try {
-      const memoCount = (await storage.getAllMemos(req.session.entity!)).length;
-      const memoId = `MEM-${new Date().getFullYear()}-${String(memoCount + 1).padStart(3, '0')}`;
+      const allMemos = await storage.getAllMemos();
+      const year = new Date().getFullYear();
+      const prefix = `MEM-${year}-`;
+      let maxNum = 0;
+      for (const m of allMemos) {
+        if (m.memoId.startsWith(prefix)) {
+          const num = parseInt(m.memoId.replace(prefix, ''), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+      }
+      const memoId = `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
       
       const memoData = {
         ...req.body,
