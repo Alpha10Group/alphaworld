@@ -35,6 +35,7 @@ export interface IStorage {
   getMemoByMemoId(memoId: string): Promise<Memo | undefined>;
   createMemo(memo: InsertMemo): Promise<Memo>;
   updateMemo(id: number, updates: Partial<Memo>): Promise<Memo | undefined>;
+  deleteAllMemos(entity: string): Promise<number>;
   
   // Issues
   getAllIssues(entity: string): Promise<Issue[]>;
@@ -131,6 +132,13 @@ export class PostgresStorage implements IStorage {
       .where(eq(schema.memos.id, id))
       .returning();
     return memo;
+  }
+
+  async deleteAllMemos(entity: string): Promise<number> {
+    const deleted = await db.delete(schema.memos)
+      .where(eq(schema.memos.entity, entity))
+      .returning();
+    return deleted.length;
   }
 
   // Issues

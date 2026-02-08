@@ -570,6 +570,28 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/memos", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (!currentUser || currentUser.role !== 'IT') {
+        return res.status(403).json({ message: "Only IT department can delete all memos" });
+      }
+      const count = await storage.deleteAllMemos(req.session.entity!);
+
+      await storage.createAuditLog({
+        action: 'Delete All Memos',
+        user: currentUser.name,
+        role: currentUser.role,
+        entity: req.session.entity,
+        details: `Deleted ${count} memo(s) for entity ${req.session.entity}`
+      });
+
+      res.json({ message: `${count} memo(s) deleted successfully`, count });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Issue routes
   app.get("/api/issues", requireAuth, async (req, res) => {
     try {

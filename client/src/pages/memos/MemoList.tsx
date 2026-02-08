@@ -3,7 +3,7 @@ import { useStore, Memo } from "@/lib/store";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search, Filter, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Table,
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 
 export default function MemoList() {
@@ -21,6 +22,7 @@ export default function MemoList() {
   const [memos, setMemos] = useState<Memo[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchMemos = async () => {
@@ -52,11 +54,32 @@ export default function MemoList() {
               <h1 className="text-3xl font-heading font-bold text-slate-900">Memos</h1>
               <p className="text-slate-500 mt-1">Manage and track internal memo approvals.</p>
             </div>
-            <Link href="/memos/new">
-              <Button className="gap-2 shadow-lg hover:shadow-xl transition-all" data-testid="button-new-memo">
-                <Plus className="w-4 h-4" /> New Memo
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              {currentUser?.role === 'IT' && (
+                <Button
+                  variant="destructive"
+                  className="gap-2 shadow-lg"
+                  data-testid="button-delete-all-memos"
+                  onClick={async () => {
+                    if (!confirm('Are you sure you want to delete ALL memos for this entity? This cannot be undone.')) return;
+                    try {
+                      const result = await api.memos.deleteAll();
+                      setMemos([]);
+                      toast({ title: "Deleted", description: result.message });
+                    } catch (err: any) {
+                      toast({ title: "Error", description: err.message || "Failed to delete memos", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" /> Delete All Memos
+                </Button>
+              )}
+              <Link href="/memos/new">
+                <Button className="gap-2 shadow-lg hover:shadow-xl transition-all" data-testid="button-new-memo">
+                  <Plus className="w-4 h-4" /> New Memo
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

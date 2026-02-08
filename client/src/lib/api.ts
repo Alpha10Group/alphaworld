@@ -80,6 +80,8 @@ export const api = {
         method: 'DELETE',
         body: JSON.stringify({ attachmentUrl }),
       }),
+    deleteAll: () =>
+      fetchAPI('/memos', { method: 'DELETE' }),
   },
 
   issues: {
