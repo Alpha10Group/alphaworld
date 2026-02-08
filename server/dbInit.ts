@@ -30,6 +30,35 @@ export async function initializeDatabase() {
     await db.execute(sql`ALTER TABLE issues ADD COLUMN IF NOT EXISTS created_by TEXT`);
   } catch (e: any) {}
 
+  // Create risk_reports table if it doesn't exist (added after initial deployment)
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS risk_reports (
+        id SERIAL PRIMARY KEY,
+        report_id TEXT NOT NULL UNIQUE,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        risk_category TEXT NOT NULL,
+        likelihood TEXT NOT NULL,
+        impact TEXT NOT NULL,
+        mitigation_plan TEXT NOT NULL,
+        date TEXT NOT NULL,
+        department TEXT NOT NULL,
+        created_by TEXT,
+        status TEXT NOT NULL,
+        entity TEXT NOT NULL,
+        risk_assigned_to JSON NOT NULL,
+        risk_reviews JSON NOT NULL,
+        risk_attachments JSON NOT NULL DEFAULT '[]'::json,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS risk_reports_entity_idx ON risk_reports (entity)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS risk_reports_status_idx ON risk_reports (status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS risk_reports_entity_status_idx ON risk_reports (entity, status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS risk_reports_created_at_idx ON risk_reports (created_at)`);
+  } catch (e: any) {}
+
   try {
     await db.select().from(schema.users).limit(1);
     console.log("Database tables exist.");
@@ -110,6 +139,28 @@ export async function initializeDatabase() {
       entity TEXT NOT NULL,
       comments JSON NOT NULL,
       ticket_attachments JSON NOT NULL DEFAULT '[]'::json,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS risk_reports (
+      id SERIAL PRIMARY KEY,
+      report_id TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      risk_category TEXT NOT NULL,
+      likelihood TEXT NOT NULL,
+      impact TEXT NOT NULL,
+      mitigation_plan TEXT NOT NULL,
+      date TEXT NOT NULL,
+      department TEXT NOT NULL,
+      created_by TEXT,
+      status TEXT NOT NULL,
+      entity TEXT NOT NULL,
+      risk_assigned_to JSON NOT NULL,
+      risk_reviews JSON NOT NULL,
+      risk_attachments JSON NOT NULL DEFAULT '[]'::json,
       created_at TIMESTAMP DEFAULT NOW() NOT NULL
     )
   `);
