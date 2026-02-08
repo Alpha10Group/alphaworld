@@ -537,8 +537,14 @@ export async function registerRoutes(
   // Issue routes
   app.get("/api/issues", requireAuth, async (req, res) => {
     try {
-      const issues = await storage.getAllIssues(req.session.entity!);
-      res.json(issues);
+      const currentUser = await storage.getUser(req.session.userId!);
+      const allIssues = await storage.getAllIssues(req.session.entity!);
+      const adminRoles = ['IT', 'MD', 'HOD', 'Operations', 'EAG', 'Administrative Department', 'Risk', 'Finance'];
+      if (currentUser && adminRoles.includes(currentUser.role)) {
+        res.json(allIssues);
+      } else {
+        res.json(allIssues.filter(i => i.createdBy === currentUser?.name));
+      }
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -554,9 +560,11 @@ export async function registerRoutes(
       }
       const issueId = `ISS-${String(maxNum + 1).padStart(3, '0')}`;
       
+      const currentUser = await storage.getUser(req.session.userId!);
       const issueData = {
         ...req.body,
         issueId,
+        createdBy: currentUser?.name || 'Unknown',
         status: 'Open',
         entity: req.session.entity!,
         reviews: [],
@@ -631,8 +639,14 @@ export async function registerRoutes(
   // Ticket routes
   app.get("/api/tickets", requireAuth, async (req, res) => {
     try {
-      const tickets = await storage.getAllTickets(req.session.entity!);
-      res.json(tickets);
+      const currentUser = await storage.getUser(req.session.userId!);
+      const allTickets = await storage.getAllTickets(req.session.entity!);
+      const adminRoles = ['IT', 'MD', 'HOD', 'Operations', 'EAG', 'Administrative Department', 'Risk', 'Finance'];
+      if (currentUser && adminRoles.includes(currentUser.role)) {
+        res.json(allTickets);
+      } else {
+        res.json(allTickets.filter(t => t.createdBy === currentUser?.name));
+      }
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -660,10 +674,13 @@ export async function registerRoutes(
       }
       const ticketId = `TKT-${String(maxTicketNum + 1).padStart(3, '0')}`;
       
+      const currentUser = await storage.getUser(req.session.userId!);
       const ticketData = {
         ...req.body,
         ticketId,
         status: 'Open',
+        createdBy: currentUser?.name || 'Unknown',
+        department: currentUser?.role || 'Unknown',
         entity: req.session.entity!,
         comments: [],
         attachments: req.body.attachments || []

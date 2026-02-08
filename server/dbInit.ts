@@ -19,6 +19,17 @@ export async function initializeDatabase() {
     await db.execute(sql`ALTER TABLE audit_logs ALTER COLUMN details SET NOT NULL`);
   } catch (e: any) {}
 
+  // Add createdBy and department columns to tickets
+  try {
+    await db.execute(sql`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS created_by TEXT`);
+    await db.execute(sql`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS department TEXT`);
+  } catch (e: any) {}
+
+  // Add createdBy column to issues
+  try {
+    await db.execute(sql`ALTER TABLE issues ADD COLUMN IF NOT EXISTS created_by TEXT`);
+  } catch (e: any) {}
+
   try {
     await db.select().from(schema.users).limit(1);
     console.log("Database tables exist.");
@@ -75,6 +86,7 @@ export async function initializeDatabase() {
       cause TEXT NOT NULL,
       date TEXT NOT NULL,
       department TEXT NOT NULL,
+      created_by TEXT,
       status TEXT NOT NULL,
       entity TEXT NOT NULL,
       assigned_to JSON NOT NULL,
@@ -93,6 +105,8 @@ export async function initializeDatabase() {
       description TEXT NOT NULL,
       status TEXT NOT NULL,
       assigned_to TEXT NOT NULL,
+      created_by TEXT,
+      department TEXT,
       entity TEXT NOT NULL,
       comments JSON NOT NULL,
       ticket_attachments JSON NOT NULL DEFAULT '[]'::json,

@@ -46,6 +46,7 @@ export type Issue = {
   cause: string;
   date: string;
   department: string;
+  createdBy?: string;
   status: 'Open' | 'In Progress' | 'Resolved';
   assignedTo: Role[];
   entity: Entity;
@@ -65,6 +66,8 @@ export type Ticket = {
   description: string;
   status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
   assignedTo: 'IT';
+  createdBy?: string;
+  department?: string;
   entity: Entity;
   comments: {
     user: string;

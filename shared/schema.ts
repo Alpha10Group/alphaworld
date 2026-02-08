@@ -63,6 +63,7 @@ export const issues = pgTable("issues", {
   cause: text("cause").notNull(),
   date: text("date").notNull(),
   department: text("department").notNull(),
+  createdBy: text("created_by"),
   status: text("status").notNull(),
   entity: text("entity").notNull(),
   assignedTo: json("assigned_to").notNull().$type<string[]>(),
@@ -88,6 +89,8 @@ export const tickets = pgTable("tickets", {
   description: text("description").notNull(),
   status: text("status").notNull(),
   assignedTo: text("assigned_to").notNull(),
+  createdBy: text("created_by"),
+  department: text("department"),
   entity: text("entity").notNull(),
   comments: json("comments").notNull().$type<Array<{
     user: string;

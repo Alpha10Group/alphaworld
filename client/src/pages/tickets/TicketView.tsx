@@ -126,13 +126,24 @@ export default function TicketView() {
                 <h2 className="text-xl font-semibold text-foreground">{ticket.title}</h2>
               </div>
 
-              <div className="grid grid-cols-4 gap-6">
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Raised By</h3>
+                  <p className="text-foreground font-medium">{ticket.createdBy || '—'}</p>
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Department</h3>
+                  <p className="text-foreground font-medium">{ticket.department || '—'}</p>
+                </div>
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Date</h3>
                   <p className="text-foreground font-medium">
                     {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : '—'}
                   </p>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-6">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Priority</h3>
                   <StatusBadge status={ticket.priority} />

@@ -76,6 +76,7 @@ export default function IssueList() {
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Incident</TableHead>
+                  <TableHead>Raised By</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Cost</TableHead>
                   <TableHead>Date</TableHead>
@@ -86,13 +87,13 @@ export default function IssueList() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                       No issues found.
                     </TableCell>
                   </TableRow>
@@ -100,6 +101,7 @@ export default function IssueList() {
                   <TableRow key={issue.id} className="hover:bg-muted/50" data-testid={`issue-row-${issue.issueId}`}>
                     <TableCell className="font-mono text-xs font-medium text-muted-foreground">{issue.issueId}</TableCell>
                     <TableCell className="font-medium text-foreground">{issue.title}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{issue.createdBy || '—'}</TableCell>
                     <TableCell>{issue.department}</TableCell>
                     <TableCell>{issue.cost}</TableCell>
                     <TableCell>{issue.date}</TableCell>

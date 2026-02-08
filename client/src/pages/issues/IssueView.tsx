@@ -117,9 +117,20 @@ export default function IssueView() {
 
               <div className="grid grid-cols-3 gap-6">
                 <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Raised By</h3>
+                  <p className="text-foreground font-medium">{issue.createdBy || '—'}</p>
+                </div>
+                <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Department</h3>
                   <p className="text-foreground font-medium">{issue.department}</p>
                 </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Date</h3>
+                  <p className="text-foreground font-medium">{issue.date || '—'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-6">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Estimated Cost</h3>
                   <p className="text-foreground font-medium">{issue.cost}</p>
