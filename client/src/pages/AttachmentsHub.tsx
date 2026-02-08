@@ -1,9 +1,9 @@
 import Sidebar from "@/components/layout/Sidebar";
-import { Memo, Issue, Ticket } from "@/lib/store";
+import { useStore, Memo, Issue, Ticket } from "@/lib/store";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, FileIcon, Search, ExternalLink } from "lucide-react";
+import { Download, FileIcon, Search, ExternalLink, Trash2 } from "lucide-react";
 import { downloadFile, downloadMultipleFiles } from "@/lib/download";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 
 export default function AttachmentsHub() {
+  const { currentUser } = useStore();
   const [memos, setMemos] = useState<Memo[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -52,7 +53,7 @@ export default function AttachmentsHub() {
     (m.attachments || []).map(a => {
       const norm = normalizeAttachment(a);
       if (!norm) return null;
-      return { ...norm, source: `Memo: ${m.memoId}`, date: m.date, id: m.memoId, type: 'memo' };
+      return { ...norm, source: `Memo: ${m.memoId}`, date: m.date, id: m.memoId, dbId: m.id, type: 'memo' as const };
     }).filter(Boolean) as any[]
   );
 
@@ -60,7 +61,7 @@ export default function AttachmentsHub() {
     (i.attachments || []).map(a => {
       const norm = normalizeAttachment(a);
       if (!norm) return null;
-      return { ...norm, source: `Issue: ${i.issueId}`, date: i.date, id: i.issueId, type: 'issue' };
+      return { ...norm, source: `Issue: ${i.issueId}`, date: i.date, id: i.issueId, dbId: i.id, type: 'issue' as const };
     }).filter(Boolean) as any[]
   );
 
@@ -68,7 +69,7 @@ export default function AttachmentsHub() {
     (t.attachments || []).map(a => {
       const norm = normalizeAttachment(a);
       if (!norm) return null;
-      return { ...norm, source: `Ticket: ${t.ticketId}`, date: new Date().toISOString().split('T')[0], id: t.ticketId, type: 'ticket' };
+      return { ...norm, source: `Ticket: ${t.ticketId}`, date: new Date().toISOString().split('T')[0], id: t.ticketId, dbId: t.id, type: 'ticket' as const };
     }).filter(Boolean) as any[]
   );
 
@@ -76,6 +77,34 @@ export default function AttachmentsHub() {
     (a.name || '').toLowerCase().includes(search.toLowerCase()) || 
     (a.source || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleDeleteAttachment = async (file: any) => {
+    if (!confirm('Are you sure you want to delete this attachment?')) return;
+    try {
+      if (file.type === 'memo') {
+        await api.memos.deleteAttachment(file.dbId, file.url);
+        setMemos(prev => prev.map(m => m.id === file.dbId 
+          ? { ...m, attachments: m.attachments.filter(a => a.url !== file.url) } 
+          : m
+        ));
+      } else if (file.type === 'issue') {
+        await api.issues.deleteAttachment(file.dbId, file.url);
+        setIssues(prev => prev.map(i => i.id === file.dbId 
+          ? { ...i, attachments: i.attachments.filter(a => a.url !== file.url) } 
+          : i
+        ));
+      } else if (file.type === 'ticket') {
+        await api.tickets.deleteAttachment(file.dbId, file.url);
+        setTickets(prev => prev.map(t => t.id === file.dbId 
+          ? { ...t, attachments: t.attachments.filter(a => a.url !== file.url) } 
+          : t
+        ));
+      }
+      toast({ title: "Deleted", description: "Attachment removed successfully." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to delete attachment", variant: "destructive" });
+    }
+  };
 
   const handleDownloadAll = async () => {
     if (allAttachments.length === 0) {
@@ -169,6 +198,17 @@ export default function AttachmentsHub() {
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
                             </a>
+                            {currentUser?.role === 'IT' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDeleteAttachment(file)}
+                                data-testid={`button-delete-${index}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
