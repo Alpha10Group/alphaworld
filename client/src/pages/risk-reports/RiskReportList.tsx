@@ -3,7 +3,7 @@ import { useStore } from "@/lib/store";
 import type { RiskReport } from "@/lib/store";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Eye } from "lucide-react";
+import { Plus, Search, Eye, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -16,11 +16,14 @@ import {
 } from "@/components/ui/table";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
 
 export default function RiskReportList() {
   const [reports, setReports] = useState<RiskReport[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -41,6 +44,84 @@ export default function RiskReportList() {
     r.reportId.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleDownloadAll = () => {
+    if (filtered.length === 0) {
+      toast({ title: "No Reports", description: "There are no risk reports to download.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Generating PDF", description: "Please wait..." });
+    try {
+      const pdf = new jsPDF("l", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 15;
+      let y = margin;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(16);
+      pdf.text("Alpha10 - Risk Reports", margin, y);
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(120, 120, 120);
+      pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - margin, y, { align: "right" });
+      pdf.setTextColor(0, 0, 0);
+      y += 10;
+
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 6;
+
+      const colWidths = [22, 55, 35, 30, 25, 25, 30, 25, 25];
+      const headers = ["ID", "Title", "Raised By", "Category", "Likelihood", "Impact", "Date", "Status", "Dept"];
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      let x = margin;
+      headers.forEach((h, i) => {
+        pdf.text(h.toUpperCase(), x, y);
+        x += colWidths[i];
+      });
+      pdf.setTextColor(0, 0, 0);
+      y += 2;
+      pdf.setDrawColor(220, 220, 220);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 5;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+
+      for (const report of filtered) {
+        if (y > 185) {
+          pdf.addPage();
+          y = margin;
+        }
+        x = margin;
+        const vals = [
+          report.reportId,
+          report.title.length > 30 ? report.title.substring(0, 30) + '...' : report.title,
+          report.createdBy || '—',
+          report.riskCategory || '—',
+          report.likelihood || '—',
+          report.impact || '—',
+          report.date,
+          report.status,
+          (report.department || '—').length > 12 ? (report.department || '—').substring(0, 12) + '...' : (report.department || '—'),
+        ];
+        vals.forEach((v, i) => {
+          pdf.text(v, x, y);
+          x += colWidths[i];
+        });
+        y += 6;
+      }
+
+      pdf.save("Risk_Reports.pdf");
+      toast({ title: "Success", description: "Risk reports downloaded successfully." });
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast({ title: "Error", description: "Failed to generate PDF", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="flex h-screen w-full bg-background">
       <Sidebar />
@@ -51,11 +132,16 @@ export default function RiskReportList() {
               <h1 className="text-3xl font-heading font-bold text-foreground">Risk Reports</h1>
               <p className="text-muted-foreground mt-1">Log and track risk incidents across departments.</p>
             </div>
-            <Link href="/risk-reports/new">
-              <Button className="gap-2 shadow-lg" data-testid="button-new-risk-report">
-                <Plus className="w-4 h-4" /> Log Risk Report
+            <div className="flex gap-2">
+              <Button variant="outline" className="gap-2" onClick={handleDownloadAll} data-testid="button-download-all-risk-reports">
+                <Download className="w-4 h-4" /> Download All
               </Button>
-            </Link>
+              <Link href="/risk-reports/new">
+                <Button className="gap-2 shadow-lg" data-testid="button-new-risk-report">
+                  <Plus className="w-4 h-4" /> Log Risk Report
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
