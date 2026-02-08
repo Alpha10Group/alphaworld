@@ -60,6 +60,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Auto-create tables and seed on startup
+  try {
+    const { initializeDatabase } = await import("./dbInit");
+    await initializeDatabase();
+  } catch (err) {
+    console.error("Database initialization error:", err);
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
