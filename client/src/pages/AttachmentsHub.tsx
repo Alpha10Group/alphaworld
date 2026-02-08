@@ -106,6 +106,46 @@ export default function AttachmentsHub() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (allAttachments.length === 0) {
+      toast({ title: "No Files", description: "No attachments to delete.", variant: "destructive" });
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete all ${allAttachments.length} visible attachment(s)? This cannot be undone.`)) return;
+
+    let deleted = 0;
+    let failed = 0;
+    for (const file of allAttachments) {
+      try {
+        if (file.type === 'memo') {
+          await api.memos.deleteAttachment(file.dbId, file.url);
+        } else if (file.type === 'issue') {
+          await api.issues.deleteAttachment(file.dbId, file.url);
+        } else if (file.type === 'ticket') {
+          await api.tickets.deleteAttachment(file.dbId, file.url);
+        }
+        deleted++;
+      } catch {
+        failed++;
+      }
+    }
+
+    const [memosData, issuesData, ticketsData] = await Promise.all([
+      api.memos.getAll(),
+      api.issues.getAll(),
+      api.tickets.getAll()
+    ]);
+    setMemos(memosData);
+    setIssues(issuesData);
+    setTickets(ticketsData);
+
+    if (failed > 0) {
+      toast({ title: "Delete Complete", description: `${deleted} deleted, ${failed} failed.`, variant: "destructive" });
+    } else {
+      toast({ title: "Delete Complete", description: `All ${deleted} attachment(s) deleted successfully.` });
+    }
+  };
+
   const handleDownloadAll = async () => {
     if (allAttachments.length === 0) {
       toast({ title: "No Files", description: "No attachments to download.", variant: "destructive" });
@@ -130,9 +170,16 @@ export default function AttachmentsHub() {
               <h1 className="text-3xl font-heading font-bold text-foreground">Attachments Hub</h1>
               <p className="text-muted-foreground mt-1">Centralized repository for all documents and proof uploads across all modules.</p>
             </div>
-            <Button className="gap-2 shadow-lg" onClick={handleDownloadAll} data-testid="button-download-all">
-              <Download className="w-4 h-4" /> Download All Visible
-            </Button>
+            <div className="flex gap-2">
+              {currentUser?.role === 'IT' && (
+                <Button variant="destructive" className="gap-2 shadow-lg" onClick={handleDeleteAll} data-testid="button-delete-all">
+                  <Trash2 className="w-4 h-4" /> Delete All Visible
+                </Button>
+              )}
+              <Button className="gap-2 shadow-lg" onClick={handleDownloadAll} data-testid="button-download-all">
+                <Download className="w-4 h-4" /> Download All Visible
+              </Button>
+            </div>
           </div>
 
           <Card className="border-none shadow-sm">
