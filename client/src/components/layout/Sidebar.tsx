@@ -14,7 +14,8 @@ import {
   BarChart3,
   Paperclip,
   Sun,
-  Moon
+  Moon,
+  ShieldAlert
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export default function Sidebar() {
     { icon: FileText, label: "Memos", href: "/memos" },
     { icon: AlertCircle, label: "Issue Tracker", href: "/issues" },
     { icon: Monitor, label: "IT Tickets", href: "/tickets" },
+    { icon: ShieldAlert, label: "Risk Reports", href: "/risk-reports" },
     { icon: Paperclip, label: "Attachments Hub", href: "/attachments" },
     { icon: Settings, label: "Settings", href: "/settings" },
     ...(currentUser?.role === 'IT' ? [

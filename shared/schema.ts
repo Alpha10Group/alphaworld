@@ -7,6 +7,7 @@ export const entityEnum = z.enum(['Alpha10 Fund Management', 'Alpha10 Advisory',
 export const roleEnum = z.enum(['Initiator', 'HOD', 'Administrative Department', 'Operations', 'EAG', 'MD', 'Finance', 'IT', 'Risk']);
 export const memoStatusEnum = z.enum(['Draft', 'Pending HOD', 'Pending Administrative Department', 'Pending Operations', 'Pending EAG', 'Pending MD', 'Approved', 'Rejected']);
 export const issueStatusEnum = z.enum(['Open', 'In Progress', 'Resolved']);
+export const riskReportStatusEnum = z.enum(['Open', 'Under Review', 'Resolved']);
 export const ticketStatusEnum = z.enum(['Open', 'In Progress', 'Resolved', 'Closed']);
 export const ticketPriorityEnum = z.enum(['Low', 'Medium', 'High', 'Critical']);
 
@@ -107,6 +108,35 @@ export const tickets = pgTable("tickets", {
   index("tickets_created_at_idx").on(table.createdAt),
 ]);
 
+export const riskReports = pgTable("risk_reports", {
+  id: serial("id").primaryKey(),
+  reportId: text("report_id").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  riskCategory: text("risk_category").notNull(),
+  likelihood: text("likelihood").notNull(),
+  impact: text("impact").notNull(),
+  mitigationPlan: text("mitigation_plan").notNull(),
+  date: text("date").notNull(),
+  department: text("department").notNull(),
+  createdBy: text("created_by"),
+  status: text("status").notNull(),
+  entity: text("entity").notNull(),
+  assignedTo: json("risk_assigned_to").notNull().$type<string[]>(),
+  reviews: json("risk_reviews").notNull().$type<Array<{
+    role: string;
+    comment?: string;
+    date?: string;
+  }>>(),
+  attachments: json("risk_attachments").notNull().$type<Array<{ originalName: string; url: string }>>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("risk_reports_entity_idx").on(table.entity),
+  index("risk_reports_status_idx").on(table.status),
+  index("risk_reports_entity_status_idx").on(table.entity, table.status),
+  index("risk_reports_created_at_idx").on(table.createdAt),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   action: text("action").notNull(),
@@ -161,6 +191,14 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({
   createdAt: true,
 });
 
+export const insertRiskReportSchema = createInsertSchema(riskReports).omit({
+  id: true,
+  reportId: true,
+  status: true,
+  reviews: true,
+  createdAt: true,
+});
+
 export const insertNotificationSettingsSchema = createInsertSchema(notificationSettings).omit({
   id: true,
 });
@@ -177,6 +215,9 @@ export type InsertIssue = z.infer<typeof insertIssueSchema>;
 
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+
+export type RiskReport = typeof riskReports.$inferSelect;
+export type InsertRiskReport = z.infer<typeof insertRiskReportSchema>;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 

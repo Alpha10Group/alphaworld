@@ -16,6 +16,9 @@ import IssueView from "@/pages/issues/IssueView";
 import TicketList from "@/pages/tickets/TicketList";
 import TicketCreate from "@/pages/tickets/TicketCreate";
 import TicketView from "@/pages/tickets/TicketView";
+import RiskReportList from "@/pages/risk-reports/RiskReportList";
+import RiskReportCreate from "@/pages/risk-reports/RiskReportCreate";
+import RiskReportView from "@/pages/risk-reports/RiskReportView";
 import AttachmentsHub from "@/pages/AttachmentsHub";
 import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/admin/UserManagement";
@@ -83,6 +86,16 @@ function Router() {
         {(params) => <ProtectedRoute component={TicketView} params={params} />}
       </Route>
       
+      <Route path="/risk-reports">
+        {() => <ProtectedRoute component={RiskReportList} />}
+      </Route>
+      <Route path="/risk-reports/new">
+        {() => <ProtectedRoute component={RiskReportCreate} />}
+      </Route>
+      <Route path="/risk-reports/:id">
+        {(params) => <ProtectedRoute component={RiskReportView} params={params} />}
+      </Route>
+
       <Route path="/attachments">
         {() => <ProtectedRoute component={AttachmentsHub} />}
       </Route>

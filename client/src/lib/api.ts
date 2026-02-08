@@ -124,6 +124,26 @@ export const api = {
       }),
   },
 
+  riskReports: {
+    getAll: () => fetchAPI('/risk-reports'),
+    getById: (id: number) => fetchAPI(`/risk-reports/${id}`),
+    create: (report: { title: string; description: string; riskCategory: string; likelihood: string; impact: string; date: string; department: string; mitigationPlan: string; attachments: Array<{ originalName: string; url: string }> }) =>
+      fetchAPI('/risk-reports', {
+        method: 'POST',
+        body: JSON.stringify(report),
+      }),
+    review: (id: number, comment: string, status?: string) =>
+      fetchAPI(`/risk-reports/${id}/review`, {
+        method: 'PATCH',
+        body: JSON.stringify({ comment, status }),
+      }),
+    deleteAttachment: (id: number, attachmentUrl: string) =>
+      fetchAPI(`/risk-reports/${id}/attachments`, {
+        method: 'DELETE',
+        body: JSON.stringify({ attachmentUrl }),
+      }),
+  },
+
   auditLogs: {
     getAll: () => fetchAPI('/audit-logs'),
   },

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, db } from "./storage";
-import { insertUserSchema, insertMemoSchema, insertIssueSchema, insertTicketSchema, issues, tickets } from "@shared/schema";
+import { insertUserSchema, insertMemoSchema, insertIssueSchema, insertTicketSchema, insertRiskReportSchema, issues, tickets, riskReports } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import { z } from "zod";
@@ -869,6 +869,162 @@ export async function registerRoutes(
       });
 
       res.json(updatedTicket);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Risk Report routes
+  app.get("/api/risk-reports", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      const allReports = await storage.getAllRiskReports(req.session.entity!);
+      const viewRoles = ['IT', 'Risk'];
+      if (currentUser && viewRoles.includes(currentUser.role)) {
+        res.json(allReports);
+      } else {
+        res.json(allReports.filter(r => r.createdBy === currentUser?.name));
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/risk-reports/:id", requireAuth, async (req, res) => {
+    try {
+      const report = await storage.getRiskReport(parseInt(req.params.id));
+      if (!report) {
+        return res.status(404).json({ message: "Risk report not found" });
+      }
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (currentUser && !['IT', 'Risk'].includes(currentUser.role) && report.createdBy !== currentUser.name) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      res.json(report);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/risk-reports", requireAuth, async (req, res) => {
+    try {
+      const { title, description, riskCategory, likelihood, impact, date, department, mitigationPlan, attachments } = req.body;
+      if (!title || !description || !riskCategory || !likelihood || !impact || !date || !department || !mitigationPlan) {
+        return res.status(400).json({ message: "Missing required fields: title, description, riskCategory, likelihood, impact, date, department, mitigationPlan" });
+      }
+
+      const allReportsAllEntities = await db.select({ reportId: riskReports.reportId }).from(riskReports);
+      let maxNum = 0;
+      for (const row of allReportsAllEntities) {
+        const match = row.reportId.match(/RSK-(\d+)/);
+        if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+      const reportId = `RSK-${String(maxNum + 1).padStart(3, '0')}`;
+
+      const currentUser = await storage.getUser(req.session.userId!);
+      const reportData = {
+        title,
+        description,
+        riskCategory,
+        likelihood,
+        impact,
+        date,
+        department,
+        mitigationPlan,
+        reportId,
+        createdBy: currentUser?.name || 'Unknown',
+        status: 'Open',
+        entity: req.session.entity!,
+        reviews: [],
+        attachments: attachments || [],
+        assignedTo: ['IT', 'Risk']
+      };
+
+      const report = await storage.createRiskReport(reportData);
+
+      await storage.createAuditLog({
+        action: 'Create Risk Report',
+        user: currentUser!.name,
+        role: currentUser!.role,
+        entity: req.session.entity,
+        details: `Created risk report ${reportId}`
+      });
+
+      res.status(201).json(report);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/risk-reports/:id/review", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (!currentUser || !['IT', 'Risk'].includes(currentUser.role)) {
+        return res.status(403).json({ message: "Only IT and Risk departments can review risk reports" });
+      }
+
+      const report = await storage.getRiskReport(parseInt(req.params.id));
+      if (!report) {
+        return res.status(404).json({ message: "Risk report not found" });
+      }
+
+      const { comment, status } = req.body;
+      const newReviews = [...(report.reviews || []), {
+        role: currentUser.role,
+        comment: comment || '',
+        date: new Date().toISOString().split('T')[0]
+      }];
+
+      const updates: any = { reviews: newReviews };
+      if (status) updates.status = status;
+
+      const updatedReport = await storage.updateRiskReport(report.id, updates);
+
+      await storage.createAuditLog({
+        action: 'Review Risk Report',
+        user: currentUser.name,
+        role: currentUser.role,
+        entity: req.session.entity,
+        details: `Reviewed risk report ${report.reportId}`
+      });
+
+      res.json(updatedReport);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/risk-reports/:id/attachments", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (!currentUser || currentUser.role !== 'IT') {
+        return res.status(403).json({ message: "Only IT department can delete attachments" });
+      }
+      const report = await storage.getRiskReport(parseInt(req.params.id));
+      if (!report) {
+        return res.status(404).json({ message: "Risk report not found" });
+      }
+      const { attachmentUrl } = req.body;
+      const updatedAttachments = (report.attachments || []).filter(
+        (att: any) => att.url !== attachmentUrl
+      );
+      const updated = await storage.updateRiskReport(report.id, { attachments: updatedAttachments });
+
+      const filename = attachmentUrl.split('/').pop();
+      if (filename) {
+        const filePath = path.join(uploadsDir, filename);
+        fs.unlink(filePath, () => {});
+      }
+
+      await storage.createAuditLog({
+        action: 'Delete Attachment',
+        user: currentUser.name,
+        role: currentUser.role,
+        entity: req.session.entity,
+        details: `Deleted attachment from risk report ${report.reportId}`
+      });
+
+      res.json(updated);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

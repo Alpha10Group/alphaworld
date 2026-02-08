@@ -2,11 +2,12 @@
 
 ## Overview
 
-NexusFlow is an enterprise workflow automation platform designed for internal operations at Alpha10 group companies. The application provides three core workflow modules:
+NexusFlow is an enterprise workflow automation platform designed for internal operations at Alpha10 group companies. The application provides four core workflow modules:
 
 1. **Memo Approvals** - Multi-step approval workflows with role-based routing (HOD → Administrative Department → Operations → EAG → MD)
 2. **Issue Tracker** - Internal issue reporting and resolution tracking with department assignments
 3. **IT Tickets** - IT support ticket management with priority levels and status tracking
+4. **Risk Reports** - Risk incident logging and tracking with category, likelihood, and impact assessment (RSK-XXX IDs, visible to IT and Risk departments, reviewable by IT/Risk)
 
 The platform supports three distinct business entities (Alpha10 Fund Management, Alpha10 Advisory, Alpha10 Global Market Limited) with entity-scoped data isolation.
 

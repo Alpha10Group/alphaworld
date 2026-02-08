@@ -78,6 +78,29 @@ export type Ticket = {
   createdAt: string;
 };
 
+export type RiskReport = {
+  id: number;
+  reportId: string;
+  title: string;
+  description: string;
+  riskCategory: string;
+  likelihood: string;
+  impact: string;
+  date: string;
+  department: string;
+  mitigationPlan: string;
+  createdBy: string;
+  status: 'Open' | 'Under Review' | 'Resolved';
+  assignedTo: string[];
+  entity: Entity;
+  reviews: {
+    role: string;
+    comment?: string;
+    date?: string;
+  }[];
+  attachments: Array<{ originalName: string; url: string }>;
+};
+
 interface AppState {
   currentEntity: Entity | null;
   currentUser: User | null;

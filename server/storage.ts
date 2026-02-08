@@ -8,6 +8,7 @@ import type {
   Memo, InsertMemo,
   Issue, InsertIssue,
   Ticket, InsertTicket,
+  RiskReport, InsertRiskReport,
   AuditLog,
   NotificationSettings, InsertNotificationSettings
 } from "@shared/schema";
@@ -49,6 +50,12 @@ export interface IStorage {
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket | undefined>;
   
+  // Risk Reports
+  getAllRiskReports(entity: string): Promise<RiskReport[]>;
+  getRiskReport(id: number): Promise<RiskReport | undefined>;
+  createRiskReport(report: InsertRiskReport): Promise<RiskReport>;
+  updateRiskReport(id: number, updates: Partial<RiskReport>): Promise<RiskReport | undefined>;
+
   // Audit Logs
   getAllAuditLogs(entity?: string): Promise<AuditLog[]>;
   createAuditLog(log: Omit<AuditLog, 'id' | 'timestamp'>): Promise<AuditLog>;
@@ -189,6 +196,31 @@ export class PostgresStorage implements IStorage {
       .where(eq(schema.tickets.id, id))
       .returning();
     return ticket;
+  }
+
+  // Risk Reports
+  async getAllRiskReports(entity: string): Promise<RiskReport[]> {
+    return await db.select().from(schema.riskReports)
+      .where(eq(schema.riskReports.entity, entity))
+      .orderBy(desc(schema.riskReports.createdAt));
+  }
+
+  async getRiskReport(id: number): Promise<RiskReport | undefined> {
+    const [report] = await db.select().from(schema.riskReports).where(eq(schema.riskReports.id, id));
+    return report;
+  }
+
+  async createRiskReport(insertReport: InsertRiskReport): Promise<RiskReport> {
+    const [report] = await db.insert(schema.riskReports).values(insertReport).returning();
+    return report;
+  }
+
+  async updateRiskReport(id: number, updates: Partial<RiskReport>): Promise<RiskReport | undefined> {
+    const [report] = await db.update(schema.riskReports)
+      .set(updates)
+      .where(eq(schema.riskReports.id, id))
+      .returning();
+    return report;
   }
 
   // Audit Logs
