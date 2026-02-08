@@ -56,6 +56,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Trust proxy for Railway/Render/etc reverse proxies
+  app.set('trust proxy', 1);
+
   // Session middleware
   app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
@@ -63,6 +66,7 @@ export async function registerRoutes(
     saveUninitialized: false,
     cookie: { 
       secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const,
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
   }));

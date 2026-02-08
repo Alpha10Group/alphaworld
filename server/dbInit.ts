@@ -11,10 +11,12 @@ export async function initializeDatabase() {
     console.log("Database tables exist.");
     return;
   } catch (err: any) {
-    if (!err.message?.includes('does not exist')) {
-      throw err;
+    const msg = (err.message || '').toLowerCase();
+    if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('undefined table') || msg.includes('no such table')) {
+      console.log("Tables not found. Creating tables...");
+    } else {
+      console.error("Unexpected DB error, attempting table creation anyway:", err.message);
     }
-    console.log("Tables not found. Creating tables...");
   }
 
   await db.execute(sql`
