@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
+import jsPDF from "jspdf";
 
 export default function RiskReportView() {
   const [, params] = useRoute("/risk-reports/:id");
@@ -70,6 +71,175 @@ export default function RiskReportView() {
 
   const canReview = currentUser?.role ? ['IT', 'Risk'].includes(currentUser.role) : false;
 
+  const handleDownloadPDF = async () => {
+    if (!report) return;
+    toast({ title: "Generating PDF", description: "Please wait..." });
+    try {
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text("Alpha10", margin, y);
+      y += 6;
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("RISK REPORT", margin, y);
+
+      pdf.setFontSize(9);
+      pdf.text(`Ref: ${report.reportId}`, pageWidth - margin, y - 6, { align: "right" });
+      pdf.text(`Date: ${report.date}`, pageWidth - margin, y, { align: "right" });
+      pdf.setTextColor(0, 0, 0);
+
+      y += 6;
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 10;
+
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("RISK TITLE", margin, y);
+      y += 6;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      const titleLines = pdf.splitTextToSize(report.title, contentWidth);
+      pdf.text(titleLines, margin, y);
+      y += titleLines.length * 7 + 6;
+
+      const fields = [
+        { label: "Raised By", value: report.createdBy || '—' },
+        { label: "Risk Category", value: report.riskCategory || '—' },
+        { label: "Department", value: report.department || '—' },
+        { label: "Likelihood", value: report.likelihood || '—' },
+        { label: "Impact", value: report.impact || '—' },
+        { label: "Status", value: report.status },
+      ];
+
+      for (let i = 0; i < fields.length; i += 3) {
+        const row = fields.slice(i, i + 3);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        pdf.setTextColor(120, 120, 120);
+        row.forEach((f, idx) => {
+          pdf.text(f.label.toUpperCase(), margin + idx * (contentWidth / 3), y);
+        });
+        y += 5;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 0, 0);
+        row.forEach((f, idx) => {
+          pdf.text(f.value, margin + idx * (contentWidth / 3), y);
+        });
+        y += 8;
+      }
+
+      y += 4;
+      pdf.setDrawColor(230, 230, 230);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("DESCRIPTION", margin, y);
+      y += 6;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      const descLines = pdf.splitTextToSize(report.description || '', contentWidth);
+      for (const line of descLines) {
+        if (y > 270) { pdf.addPage(); y = margin; }
+        pdf.text(line, margin, y);
+        y += 5;
+      }
+      y += 6;
+
+      if (report.mitigationPlan) {
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 8;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text("MITIGATION PLAN", margin, y);
+        y += 6;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 0, 0);
+        const mitLines = pdf.splitTextToSize(report.mitigationPlan, contentWidth);
+        for (const line of mitLines) {
+          if (y > 270) { pdf.addPage(); y = margin; }
+          pdf.text(line, margin, y);
+          y += 5;
+        }
+        y += 6;
+      }
+
+      if (report.attachments && report.attachments.length > 0) {
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 8;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text("Attachments", margin, y);
+        y += 6;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        for (const att of report.attachments) {
+          if (y > 270) { pdf.addPage(); y = margin; }
+          pdf.text(`• ${att.originalName}`, margin + 2, y);
+          y += 5;
+        }
+        y += 4;
+      }
+
+      if (report.reviews && report.reviews.length > 0) {
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 8;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text("Reviews", margin, y);
+        y += 8;
+
+        for (const r of report.reviews) {
+          if (y > 255) { pdf.addPage(); y = margin; }
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(10);
+          pdf.text(r.role, margin, y);
+          if (r.date) {
+            pdf.setFontSize(8);
+            pdf.setTextColor(120, 120, 120);
+            pdf.text(r.date, pageWidth - margin, y, { align: "right" });
+          }
+          y += 5;
+          pdf.setFont("helvetica", "italic");
+          pdf.setFontSize(9);
+          pdf.setTextColor(80, 80, 80);
+          const commentText = `"${r.comment || 'No comment'}"`;
+          const commentLines = pdf.splitTextToSize(commentText, contentWidth);
+          pdf.text(commentLines, margin, y);
+          y += commentLines.length * 4 + 6;
+          pdf.setTextColor(0, 0, 0);
+        }
+      }
+
+      pdf.save(`${report.reportId}_Risk_Report.pdf`);
+      toast({ title: "Success", description: "Risk report downloaded successfully." });
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast({ title: "Error", description: "Failed to generate PDF", variant: "destructive" });
+    }
+  };
+
   const handleReview = async () => {
     setIsProcessing(true);
     try {
@@ -106,6 +276,9 @@ export default function RiskReportView() {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" className="gap-2" onClick={handleDownloadPDF} data-testid="button-download">
+                <Download className="w-4 h-4" /> Download PDF
+              </Button>
               {canReview && report.status !== 'Resolved' && (
                 <Button
                   className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
