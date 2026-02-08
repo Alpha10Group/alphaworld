@@ -6,6 +6,19 @@ import bcrypt from "bcrypt";
 export async function initializeDatabase() {
   console.log("Checking database tables...");
 
+  // Fix audit_logs column name mismatch (created_at -> timestamp)
+  try {
+    await db.execute(sql`ALTER TABLE audit_logs RENAME COLUMN created_at TO "timestamp"`);
+    console.log("Migrated audit_logs: renamed created_at to timestamp");
+  } catch (e: any) {
+    // Column already renamed or table doesn't exist yet - either is fine
+  }
+
+  // Fix audit_logs details column nullability
+  try {
+    await db.execute(sql`ALTER TABLE audit_logs ALTER COLUMN details SET NOT NULL`);
+  } catch (e: any) {}
+
   try {
     await db.select().from(schema.users).limit(1);
     console.log("Database tables exist.");
@@ -94,8 +107,8 @@ export async function initializeDatabase() {
       "user" TEXT NOT NULL,
       role TEXT NOT NULL,
       entity TEXT,
-      details TEXT,
-      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+      details TEXT NOT NULL,
+      "timestamp" TIMESTAMP DEFAULT NOW() NOT NULL
     )
   `);
 
