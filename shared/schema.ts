@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const entityEnum = z.enum(['Alpha10 Fund Management', 'Alpha10 Advisory', 'Alpha10 Global Market Limited']);
 export const roleEnum = z.enum(['Initiator', 'HOD', 'Administrative Department', 'Operations', 'EAG', 'MD', 'Finance', 'IT', 'Risk']);
-export const memoStatusEnum = z.enum(['Draft', 'Pending HOD', 'Pending Administrative Department', 'Pending Operations', 'Pending EAG', 'Pending MD', 'Approved', 'Rejected']);
+export const memoStatusEnum = z.enum(['Draft', 'Pending HOD', 'Pending Administrative Department', 'Pending Operations', 'Pending EAG', 'Pending MD', 'Approved', 'Rejected', 'Treated']);
 export const issueStatusEnum = z.enum(['Open', 'In Progress', 'Resolved']);
 export const riskReportStatusEnum = z.enum(['Open', 'Under Review', 'Resolved']);
 export const ticketStatusEnum = z.enum(['Open', 'In Progress', 'Resolved', 'Closed']);
@@ -47,6 +47,9 @@ export const memos = pgTable("memos", {
     signature?: string;
   }>>(),
   attachments: json("attachments").notNull().$type<Array<{ originalName: string; url: string }>>(),
+  treatedBy: text("treated_by"),
+  treatedDate: text("treated_date"),
+  treatedComment: text("treated_comment"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("memos_entity_idx").on(table.entity),

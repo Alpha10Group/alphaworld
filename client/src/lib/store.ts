@@ -14,7 +14,7 @@ export type User = {
   phone?: string;
 };
 
-export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Administrative Department' | 'Pending Operations' | 'Pending EAG' | 'Pending MD' | 'Approved' | 'Rejected';
+export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Administrative Department' | 'Pending Operations' | 'Pending EAG' | 'Pending MD' | 'Approved' | 'Rejected' | 'Treated';
 
 export type Memo = {
   id: number;
@@ -35,6 +35,9 @@ export type Memo = {
     signature?: string;
   }[];
   attachments: Array<{ originalName: string; url: string }>;
+  treatedBy?: string;
+  treatedDate?: string;
+  treatedComment?: string;
 };
 
 export type Issue = {

@@ -39,7 +39,8 @@ export default function MemoView() {
   const [signature, setSignature] = useState(currentUser?.name || "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'resubmit'>('approve');
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'resubmit' | 'treat'>('approve');
+  const [treatComment, setTreatComment] = useState("");
   const [resubmitContent, setResubmitContent] = useState("");
   const [resubmitTitle, setResubmitTitle] = useState("");
   const [resubmitAttachments, setResubmitAttachments] = useState<UploadedFile[]>([]);
@@ -125,6 +126,9 @@ export default function MemoView() {
       } else if (actionType === 'resubmit') {
         await api.memos.resubmit(memo.memoId, resubmitContent, resubmitTitle, resubmitAttachments);
         toast({ title: "Resubmitted", description: "Memo has been updated and sent back to HOD." });
+      } else if (actionType === 'treat') {
+        await api.memos.treat(memo.memoId, treatComment);
+        toast({ title: "Treated", description: "Memo has been marked as treated by Finance." });
       }
       
       const updatedMemo = await api.memos.getById(memo.memoId);
@@ -332,6 +336,15 @@ export default function MemoView() {
                     Revise & Resubmit
                   </Button>
                )}
+               {currentUser?.role === 'Finance' && memo.status === 'Approved' && (
+                <Button 
+                  className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+                  onClick={() => { setActionType('treat'); setTreatComment(''); setIsDialogOpen(true); }}
+                  data-testid="button-treat"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Mark as Treated
+                </Button>
+               )}
                <Button variant="outline" className="gap-2" onClick={handleDownloadPDF} data-testid="button-download">
                 <Download className="w-4 h-4" /> Download PDF
               </Button>
@@ -490,6 +503,34 @@ export default function MemoView() {
                         ))}
                     </div>
                 </div>
+
+                {memo.status === 'Treated' && memo.treatedBy && (
+                    <div className="mt-6">
+                        <h3 className="font-heading font-semibold text-lg mb-3">Finance Treatment</h3>
+                        <div className="flex items-start gap-4 p-4 rounded-lg border bg-purple-50 border-purple-200">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-purple-100 text-purple-700">
+                                <CheckCircle2 className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex justify-between mb-1">
+                                    <h4 className="font-semibold text-sm">Finance Department</h4>
+                                    <span className="text-xs font-medium px-2 py-0.5 rounded bg-purple-100 text-purple-700">
+                                        Treated
+                                    </span>
+                                </div>
+                                {memo.treatedComment && (
+                                    <p className="text-sm text-slate-600 italic">"{memo.treatedComment}"</p>
+                                )}
+                                <div className="mt-2 flex justify-between items-end">
+                                    <div className="text-xs text-slate-400">
+                                        Treated by <span className="font-medium text-slate-900">{memo.treatedBy}</span>
+                                    </div>
+                                    <div className="text-xs text-slate-400">{memo.treatedDate}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
             
             <div className="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
@@ -503,13 +544,16 @@ export default function MemoView() {
                 <DialogHeader>
                     <DialogTitle>
                       {actionType === 'approve' ? 'Approve Memo' : 
-                       actionType === 'reject' ? 'Reject Memo' : 'Revise & Resubmit'}
+                       actionType === 'reject' ? 'Reject Memo' : 
+                       actionType === 'treat' ? 'Mark as Treated' : 'Revise & Resubmit'}
                     </DialogTitle>
                     <DialogDescription>
                         {actionType === 'approve' 
                             ? 'Please provide your remarks and digital signature to proceed.' 
                             : actionType === 'reject'
                             ? 'Please provide a reason for rejection.'
+                            : actionType === 'treat'
+                            ? 'Confirm that this memo has been treated by Finance. Add an optional comment.'
                             : 'Update your memo details, attachments, and resubmit for approval.'}
                     </DialogDescription>
                 </DialogHeader>
@@ -573,6 +617,16 @@ export default function MemoView() {
                           </Button>
                         </div>
                       </div>
+                    ) : actionType === 'treat' ? (
+                      <div className="space-y-2">
+                          <Label>Comment (optional)</Label>
+                          <Textarea 
+                              value={treatComment} 
+                              onChange={(e) => setTreatComment(e.target.value)}
+                              placeholder="Payment processed, funds disbursed..."
+                              data-testid="textarea-treat-comment"
+                          />
+                      </div>
                     ) : (
                       <div className="space-y-2">
                           <Label>Remarks / Comments</Label>
@@ -606,7 +660,8 @@ export default function MemoView() {
                     >
                         {isProcessing ? 'Processing...' : 
                          actionType === 'approve' ? 'Sign & Approve' : 
-                         actionType === 'reject' ? 'Reject' : 'Resubmit'}
+                         actionType === 'reject' ? 'Reject' : 
+                         actionType === 'treat' ? 'Confirm Treated' : 'Resubmit'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

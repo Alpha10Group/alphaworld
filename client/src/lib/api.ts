@@ -75,6 +75,11 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ content, title, attachments }),
       }),
+    treat: (id: string, comment: string) =>
+      fetchAPI(`/memos/${id}/treat`, {
+        method: 'PATCH',
+        body: JSON.stringify({ comment }),
+      }),
     deleteAttachment: (id: number, attachmentUrl: string) =>
       fetchAPI(`/memos/${id}/attachments`, {
         method: 'DELETE',

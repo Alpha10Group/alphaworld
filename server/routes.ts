@@ -534,6 +534,45 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/memos/:id/treat", requireAuth, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.session.userId!);
+      if (!currentUser || currentUser.role !== 'Finance') {
+        return res.status(403).json({ message: "Only Finance department can mark memos as treated" });
+      }
+
+      const memo = await storage.getMemoByMemoId(req.params.id);
+      if (!memo) {
+        return res.status(404).json({ message: "Memo not found" });
+      }
+
+      if (memo.status !== 'Approved') {
+        return res.status(400).json({ message: "Only approved memos can be marked as treated" });
+      }
+
+      const { comment } = req.body;
+
+      const updatedMemo = await storage.updateMemo(memo.id, {
+        status: 'Treated',
+        treatedBy: currentUser.name,
+        treatedDate: new Date().toISOString().split('T')[0],
+        treatedComment: comment || ''
+      });
+
+      await storage.createAuditLog({
+        action: 'Treat Memo',
+        user: currentUser.name,
+        role: currentUser.role,
+        entity: req.session.entity,
+        details: `Marked memo ${req.params.id} as treated`
+      });
+
+      res.json(updatedMemo);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/memos/:id/attachments", requireAuth, async (req, res) => {
     try {
       const currentUser = await storage.getUser(req.session.userId!);
