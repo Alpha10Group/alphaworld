@@ -14,11 +14,12 @@ export type User = {
   phone?: string;
 };
 
-export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Administrative Department' | 'Pending Operations' | 'Pending EAG' | 'Pending MD' | 'Approved' | 'Rejected' | 'Treated';
+export type MemoStatus = 'Draft' | 'Pending HOD' | 'Pending Administrative Department' | 'Pending Operations' | 'Pending EAG' | 'Pending Finance' | 'Pending MD' | 'Approved' | 'Rejected' | 'Treated';
 
 export type Memo = {
   id: number;
   memoId: string;
+  memoType: 'Memo' | 'Procurement';
   title: string;
   content: string;
   initiator: string;

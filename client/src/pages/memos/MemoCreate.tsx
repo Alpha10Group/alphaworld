@@ -17,6 +17,7 @@ type MemoFormValues = {
   title: string;
   department: string;
   content: string;
+  memoType: string;
 };
 
 type UploadedFile = {
@@ -33,11 +34,14 @@ export default function MemoCreate() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<MemoFormValues>({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<MemoFormValues>({
     defaultValues: {
-      department: "Marketing"
+      department: "Marketing",
+      memoType: "Memo"
     }
   });
+
+  const selectedType = watch("memoType");
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -83,6 +87,7 @@ export default function MemoCreate() {
         title: data.title,
         department: data.department,
         content: data.content,
+        memoType: data.memoType,
         initiator: currentUser.name,
         date: new Date().toISOString().split('T')[0],
         attachments: uploadedFiles
@@ -139,7 +144,21 @@ export default function MemoCreate() {
             </CardHeader>
             <CardContent className="p-6">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                
+
+                <div className="space-y-2">
+                  <Label htmlFor="memoType">Type</Label>
+                  <div className="flex gap-4">
+                    <label className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${selectedType === 'Memo' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <input type="radio" value="Memo" {...register("memoType")} className="sr-only" />
+                      <span className="font-medium">Memo</span>
+                    </label>
+                    <label className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${selectedType === 'Procurement' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <input type="radio" value="Procurement" {...register("memoType")} className="sr-only" />
+                      <span className="font-medium">Procurement</span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="title">Subject</Label>
                   <Input 

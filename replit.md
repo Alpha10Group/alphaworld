@@ -50,11 +50,12 @@ Preferred communication style: Simple, everyday language.
 **Entity-Scoped Multi-tenancy**: Data is filtered by selected business entity at the application level rather than database level. Users select an entity at login which scopes all subsequent queries.
 
 **Role-Based Workflow**: Each module has its own approval chain:
-- Memos/Procurement: Initiator → HOD → EAG → Finance → MD → Operations
+- Memos: Initiator → HOD → EAG → Finance → MD → Operations
+- Procurement: Initiator → HOD → EAG → Finance → Administrative Dept → MD → Operations (selected via type selector on memo creation form)
 - Issue Tracker: Initiator → Risk → MD
 - Risk Reports: Initiator → Risk → MD
 - IT Tickets: Initiator → IT
-Each step captures approver signature/comments. IT role has read access to all modules.
+Memo type (Memo/Procurement) is stored in the `memoType` field on the memos table. Each step captures approver signature/comments. IT role has read access to all modules.
 
 **IT Backend Visibility**: IT users can view all data across memos, procurement, issues, risk reports, and IT tickets for administrative oversight.
 

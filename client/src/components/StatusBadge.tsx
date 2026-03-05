@@ -13,6 +13,10 @@ export function StatusBadge({ status, className }: { status: string, className?:
     classes = "bg-amber-50 text-amber-700 hover:bg-amber-50 border-amber-200";
   } else if (status === "Draft") {
     classes = "bg-slate-100 text-slate-600 border-slate-200";
+  } else if (status === "Memo") {
+    classes = "bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200";
+  } else if (status === "Procurement") {
+    classes = "bg-violet-100 text-violet-700 hover:bg-violet-100 border-violet-200";
   }
 
   return (

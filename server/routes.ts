@@ -299,19 +299,33 @@ export async function registerRoutes(
       }
       const memoId = `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
       
+      const memoType = req.body.memoType || 'Memo';
+      
+      const memoWorkflow = memoType === 'Procurement'
+        ? [
+            { role: 'HOD', status: 'Pending' },
+            { role: 'EAG', status: 'Pending' },
+            { role: 'Finance', status: 'Pending' },
+            { role: 'Administrative Department', status: 'Pending' },
+            { role: 'MD', status: 'Pending' },
+            { role: 'Operations', status: 'Pending' },
+          ]
+        : [
+            { role: 'HOD', status: 'Pending' },
+            { role: 'EAG', status: 'Pending' },
+            { role: 'Finance', status: 'Pending' },
+            { role: 'MD', status: 'Pending' },
+            { role: 'Operations', status: 'Pending' },
+          ];
+
       const memoData = {
         ...req.body,
         memoId,
+        memoType,
         status: 'Pending HOD',
         currentHandler: 'HOD',
         entity: req.session.entity!,
-        workflow: [
-          { role: 'HOD', status: 'Pending' },
-          { role: 'EAG', status: 'Pending' },
-          { role: 'Finance', status: 'Pending' },
-          { role: 'MD', status: 'Pending' },
-          { role: 'Operations', status: 'Pending' },
-        ],
+        workflow: memoWorkflow,
         attachments: req.body.attachments || []
       };
       

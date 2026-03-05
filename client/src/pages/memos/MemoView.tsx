@@ -315,6 +315,7 @@ export default function MemoView() {
               <div>
                 <h1 className="text-2xl font-heading font-bold text-slate-900">{memo.memoId}</h1>
                 <div className="flex items-center gap-2 mt-1">
+                  <StatusBadge status={memo.memoType || 'Memo'} />
                   <StatusBadge status={memo.status} />
                   <span className="text-slate-500 text-sm">Initiated by {memo.initiator} on {memo.date}</span>
                 </div>

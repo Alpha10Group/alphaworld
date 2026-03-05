@@ -55,7 +55,7 @@ export const api = {
   memos: {
     getAll: () => fetchAPI('/memos'),
     getById: (id: string) => fetchAPI(`/memos/${id}`),
-    create: (memo: { title: string; content: string; initiator: string; department: string; date: string; attachments: Array<{ originalName: string; url: string }> }) =>
+    create: (memo: { title: string; content: string; initiator: string; department: string; date: string; memoType?: string; attachments: Array<{ originalName: string; url: string }> }) =>
       fetchAPI('/memos', {
         method: 'POST',
         body: JSON.stringify(memo),

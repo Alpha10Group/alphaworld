@@ -103,6 +103,7 @@ export default function MemoList() {
               <TableHeader className="bg-slate-50">
                 <TableRow>
                   <TableHead className="w-[120px]">ID</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead>Initiator</TableHead>
                   <TableHead>Date</TableHead>
@@ -113,19 +114,20 @@ export default function MemoList() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-slate-500">
+                    <TableCell colSpan={7} className="h-32 text-center text-slate-500">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filteredMemos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-slate-500">
+                    <TableCell colSpan={7} className="h-32 text-center text-slate-500">
                       No memos found.
                     </TableCell>
                   </TableRow>
                 ) : filteredMemos.map((memo) => (
                   <TableRow key={memo.id} className="hover:bg-slate-50/50 transition-colors" data-testid={`memo-row-${memo.memoId}`}>
                     <TableCell className="font-mono text-xs font-medium text-slate-500">{memo.memoId}</TableCell>
+                    <TableCell><StatusBadge status={memo.memoType || 'Memo'} /></TableCell>
                     <TableCell className="font-medium text-slate-900">{memo.title}</TableCell>
                     <TableCell>{memo.initiator}</TableCell>
                     <TableCell>{memo.date}</TableCell>
