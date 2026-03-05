@@ -37,6 +37,11 @@ export async function initializeDatabase() {
     await db.execute(sql`ALTER TABLE memos ADD COLUMN IF NOT EXISTS treated_comment TEXT`);
   } catch (e: any) {}
 
+  // Add memo_type column to memos table
+  try {
+    await db.execute(sql`ALTER TABLE memos ADD COLUMN IF NOT EXISTS memo_type TEXT NOT NULL DEFAULT 'Memo'`);
+  } catch (e: any) {}
+
   // Create risk_reports table if it doesn't exist (added after initial deployment)
   try {
     await db.execute(sql`
@@ -98,6 +103,7 @@ export async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS memos (
       id SERIAL PRIMARY KEY,
       memo_id TEXT NOT NULL UNIQUE,
+      memo_type TEXT NOT NULL DEFAULT 'Memo',
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       initiator TEXT NOT NULL,
