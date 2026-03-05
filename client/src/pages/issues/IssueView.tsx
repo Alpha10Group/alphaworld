@@ -59,17 +59,25 @@ export default function IssueView() {
     );
   }
 
-  const canReview = currentUser?.role ? issue.assignedTo.includes(currentUser.role) : false;
+  const canReview = (() => {
+    if (!currentUser?.role) return false;
+    if (issue.status === 'Pending Risk' && currentUser.role === 'Risk') return true;
+    if (issue.status === 'Pending MD' && currentUser.role === 'MD') return true;
+    return false;
+  })();
+
+  const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
 
   const handleReview = async () => {
     setIsProcessing(true);
     try {
-      await api.issues.review(issue.id, comment);
+      await api.issues.review(issue.id, comment, reviewAction);
       const updated = await api.issues.getById(issue.id);
       setIssue(updated);
       setIsDialogOpen(false);
       setComment("");
-      toast({ title: "Review Submitted", description: "Your review has been recorded." });
+      setReviewAction('approve');
+      toast({ title: reviewAction === 'approve' ? "Approved" : "Rejected", description: `Issue has been ${reviewAction === 'approve' ? 'approved' : 'rejected'}.` });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to submit review", variant: "destructive" });
     } finally {
@@ -96,14 +104,23 @@ export default function IssueView() {
               </div>
             </div>
             <div className="flex gap-2">
-              {canReview && issue.status !== 'Resolved' && (
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                  onClick={() => setIsDialogOpen(true)}
-                  data-testid="button-review"
-                >
-                  <MessageSquare className="w-4 h-4" /> Add Review
-                </Button>
+              {canReview && !['Resolved', 'Rejected'].includes(issue.status) && (
+                <>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                    onClick={() => { setReviewAction('approve'); setIsDialogOpen(true); }}
+                    data-testid="button-approve"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    className="bg-red-600 hover:bg-red-700 text-white gap-2"
+                    onClick={() => { setReviewAction('reject'); setIsDialogOpen(true); }}
+                    data-testid="button-reject"
+                  >
+                    Reject
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -235,9 +252,11 @@ export default function IssueView() {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Review</DialogTitle>
+                <DialogTitle>{reviewAction === 'approve' ? 'Approve Issue' : 'Reject Issue'}</DialogTitle>
                 <DialogDescription>
-                  Submit your review for this issue as {currentUser?.role}.
+                  {reviewAction === 'approve' 
+                    ? `Approve this issue as ${currentUser?.role}. It will move to the next step.`
+                    : `Reject this issue as ${currentUser?.role}.`}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -256,9 +275,10 @@ export default function IssueView() {
                 <Button
                   onClick={handleReview}
                   disabled={isProcessing}
+                  className={reviewAction === 'reject' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}
                   data-testid="button-confirm-review"
                 >
-                  {isProcessing ? 'Submitting...' : 'Submit Review'}
+                  {isProcessing ? 'Processing...' : reviewAction === 'approve' ? 'Approve' : 'Reject'}
                 </Button>
               </DialogFooter>
             </DialogContent>

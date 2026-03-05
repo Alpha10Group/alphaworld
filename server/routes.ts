@@ -307,10 +307,10 @@ export async function registerRoutes(
         entity: req.session.entity!,
         workflow: [
           { role: 'HOD', status: 'Pending' },
-          { role: 'Administrative Department', status: 'Pending' },
-          { role: 'Operations', status: 'Pending' },
           { role: 'EAG', status: 'Pending' },
+          { role: 'Finance', status: 'Pending' },
           { role: 'MD', status: 'Pending' },
+          { role: 'Operations', status: 'Pending' },
         ],
         attachments: req.body.attachments || []
       };
@@ -507,8 +507,8 @@ export async function registerRoutes(
 
       const updateData: any = {
         content,
-        status: 'Pending HOD',
-        currentHandler: 'HOD',
+        status: `Pending ${resetWorkflow[0].role}`,
+        currentHandler: resetWorkflow[0].role,
         workflow: resetWorkflow
       };
       if (title) {
@@ -636,7 +636,7 @@ export async function registerRoutes(
     try {
       const currentUser = await storage.getUser(req.session.userId!);
       const allIssues = await storage.getAllIssues(req.session.entity!);
-      const issueViewRoles = ['IT', 'Risk'];
+      const issueViewRoles = ['IT', 'Risk', 'MD'];
       if (currentUser && issueViewRoles.includes(currentUser.role)) {
         res.json(allIssues);
       } else {
@@ -662,10 +662,11 @@ export async function registerRoutes(
         ...req.body,
         issueId,
         createdBy: currentUser?.name || 'Unknown',
-        status: 'Open',
+        status: 'Pending Risk',
         entity: req.session.entity!,
         reviews: [],
-        attachments: req.body.attachments || []
+        attachments: req.body.attachments || [],
+        assignedTo: ['Risk', 'MD']
       };
       
       const issue = await storage.createIssue(issueData);
@@ -698,7 +699,7 @@ export async function registerRoutes(
 
   app.patch("/api/issues/:id/review", requireAuth, async (req, res) => {
     try {
-      const { comment } = req.body;
+      const { comment, action } = req.body;
       const issue = await storage.getIssue(parseInt(req.params.id));
       
       if (!issue) {
@@ -706,6 +707,18 @@ export async function registerRoutes(
       }
 
       const currentUser = await storage.getUser(req.session.userId!);
+      
+      const issueWorkflow = ['Risk', 'MD'];
+      const currentStatus = issue.status;
+      const currentRole = currentUser!.role;
+
+      if (currentStatus === 'Pending Risk' && currentRole !== 'Risk') {
+        return res.status(403).json({ message: "Only Risk department can review at this stage" });
+      }
+      if (currentStatus === 'Pending MD' && currentRole !== 'MD') {
+        return res.status(403).json({ message: "Only MD can review at this stage" });
+      }
+
       const newReviews = [
         ...issue.reviews,
         {
@@ -715,16 +728,28 @@ export async function registerRoutes(
         }
       ];
 
+      let newStatus = issue.status;
+      if (action === 'reject') {
+        newStatus = 'Rejected';
+      } else {
+        if (currentStatus === 'Pending Risk') {
+          newStatus = 'Pending MD';
+        } else if (currentStatus === 'Pending MD') {
+          newStatus = 'Resolved';
+        }
+      }
+
       const updatedIssue = await storage.updateIssue(issue.id, {
-        reviews: newReviews
+        reviews: newReviews,
+        status: newStatus
       });
 
       await storage.createAuditLog({
-        action: 'Review Issue',
+        action: action === 'reject' ? 'Reject Issue' : 'Review Issue',
         user: currentUser!.name,
         role: currentUser!.role,
         entity: req.session.entity,
-        details: `Reviewed issue ${issue.issueId}`
+        details: `${action === 'reject' ? 'Rejected' : 'Reviewed'} issue ${issue.issueId} - status: ${newStatus}`
       });
 
       res.json(updatedIssue);
@@ -918,7 +943,7 @@ export async function registerRoutes(
     try {
       const currentUser = await storage.getUser(req.session.userId!);
       const allReports = await storage.getAllRiskReports(req.session.entity!);
-      const viewRoles = ['IT', 'Risk'];
+      const viewRoles = ['IT', 'Risk', 'MD'];
       if (currentUser && viewRoles.includes(currentUser.role)) {
         res.json(allReports);
       } else {
@@ -936,7 +961,7 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Risk report not found" });
       }
       const currentUser = await storage.getUser(req.session.userId!);
-      if (currentUser && !['IT', 'Risk'].includes(currentUser.role) && report.createdBy !== currentUser.name) {
+      if (currentUser && !['IT', 'Risk', 'MD'].includes(currentUser.role) && report.createdBy !== currentUser.name) {
         return res.status(403).json({ message: "Access denied" });
       }
       res.json(report);
@@ -972,11 +997,11 @@ export async function registerRoutes(
         mitigationPlan,
         reportId,
         createdBy: currentUser?.name || 'Unknown',
-        status: 'Open',
+        status: 'Pending Risk',
         entity: req.session.entity!,
         reviews: [],
         attachments: attachments || [],
-        assignedTo: ['IT', 'Risk']
+        assignedTo: ['Risk', 'MD']
       };
 
       const report = await storage.createRiskReport(reportData);
@@ -998,8 +1023,8 @@ export async function registerRoutes(
   app.patch("/api/risk-reports/:id/review", requireAuth, async (req, res) => {
     try {
       const currentUser = await storage.getUser(req.session.userId!);
-      if (!currentUser || !['IT', 'Risk'].includes(currentUser.role)) {
-        return res.status(403).json({ message: "Only IT and Risk departments can review risk reports" });
+      if (!currentUser || !['Risk', 'MD'].includes(currentUser.role)) {
+        return res.status(403).json({ message: "Only Risk and MD can review risk reports" });
       }
 
       const report = await storage.getRiskReport(parseInt(req.params.id));
@@ -1007,24 +1032,45 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Risk report not found" });
       }
 
-      const { comment, status } = req.body;
+      const currentStatus = report.status;
+      const currentRole = currentUser.role;
+
+      if (currentStatus === 'Pending Risk' && currentRole !== 'Risk') {
+        return res.status(403).json({ message: "Only Risk department can review at this stage" });
+      }
+      if (currentStatus === 'Pending MD' && currentRole !== 'MD') {
+        return res.status(403).json({ message: "Only MD can review at this stage" });
+      }
+
+      const { comment, action } = req.body;
       const newReviews = [...(report.reviews || []), {
         role: currentUser.role,
         comment: comment || '',
         date: new Date().toISOString().split('T')[0]
       }];
 
-      const updates: any = { reviews: newReviews };
-      if (status) updates.status = status;
+      let newStatus = report.status;
+      if (action === 'reject') {
+        newStatus = 'Rejected';
+      } else {
+        if (currentStatus === 'Pending Risk') {
+          newStatus = 'Pending MD';
+        } else if (currentStatus === 'Pending MD') {
+          newStatus = 'Resolved';
+        }
+      }
 
-      const updatedReport = await storage.updateRiskReport(report.id, updates);
+      const updatedReport = await storage.updateRiskReport(report.id, {
+        reviews: newReviews,
+        status: newStatus
+      });
 
       await storage.createAuditLog({
-        action: 'Review Risk Report',
+        action: action === 'reject' ? 'Reject Risk Report' : 'Review Risk Report',
         user: currentUser.name,
         role: currentUser.role,
         entity: req.session.entity,
-        details: `Reviewed risk report ${report.reportId}`
+        details: `${action === 'reject' ? 'Rejected' : 'Reviewed'} risk report ${report.reportId} - status: ${newStatus}`
       });
 
       res.json(updatedReport);

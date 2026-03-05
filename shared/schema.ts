@@ -5,9 +5,9 @@ import { z } from "zod";
 
 export const entityEnum = z.enum(['Alpha10 Fund Management', 'Alpha10 Advisory', 'Alpha10 Global Market Limited']);
 export const roleEnum = z.enum(['Initiator', 'HOD', 'Administrative Department', 'Operations', 'EAG', 'MD', 'Finance', 'IT', 'Risk']);
-export const memoStatusEnum = z.enum(['Draft', 'Pending HOD', 'Pending Administrative Department', 'Pending Operations', 'Pending EAG', 'Pending MD', 'Approved', 'Rejected', 'Treated']);
-export const issueStatusEnum = z.enum(['Open', 'In Progress', 'Resolved']);
-export const riskReportStatusEnum = z.enum(['Open', 'Under Review', 'Resolved']);
+export const memoStatusEnum = z.enum(['Draft', 'Pending HOD', 'Pending EAG', 'Pending Finance', 'Pending MD', 'Pending Operations', 'Approved', 'Rejected', 'Treated']);
+export const issueStatusEnum = z.enum(['Open', 'Pending Risk', 'Pending MD', 'In Progress', 'Resolved', 'Rejected']);
+export const riskReportStatusEnum = z.enum(['Open', 'Pending Risk', 'Pending MD', 'Under Review', 'Resolved', 'Rejected']);
 export const ticketStatusEnum = z.enum(['Open', 'In Progress', 'Resolved', 'Closed']);
 export const ticketPriorityEnum = z.enum(['Low', 'Medium', 'High', 'Critical']);
 

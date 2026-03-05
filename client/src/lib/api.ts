@@ -97,10 +97,10 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(issue),
       }),
-    review: (id: number, comment: string) =>
+    review: (id: number, comment: string, action?: string) =>
       fetchAPI(`/issues/${id}/review`, {
         method: 'PATCH',
-        body: JSON.stringify({ comment }),
+        body: JSON.stringify({ comment, action: action || 'approve' }),
       }),
     deleteAttachment: (id: number, attachmentUrl: string) =>
       fetchAPI(`/issues/${id}/attachments`, {
@@ -137,10 +137,10 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(report),
       }),
-    review: (id: number, comment: string, status?: string) =>
+    review: (id: number, comment: string, action?: string) =>
       fetchAPI(`/risk-reports/${id}/review`, {
         method: 'PATCH',
-        body: JSON.stringify({ comment, status }),
+        body: JSON.stringify({ comment, action: action || 'approve' }),
       }),
     deleteAttachment: (id: number, attachmentUrl: string) =>
       fetchAPI(`/risk-reports/${id}/attachments`, {

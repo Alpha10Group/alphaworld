@@ -62,10 +62,10 @@ export default function IssueCreate() {
         cause: data.cause,
         date: data.date,
         department: data.department,
-        assignedTo: ['IT', 'MD', 'Risk'],
+        assignedTo: ['Risk', 'MD'],
         attachments: uploadedFiles
       });
-      toast({ title: "Issue Logged", description: "Incident has been reported to IT, MD, and Risk." });
+      toast({ title: "Issue Logged", description: "Incident has been submitted for Risk and MD review." });
       setLocation("/issues");
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to create issue", variant: "destructive" });

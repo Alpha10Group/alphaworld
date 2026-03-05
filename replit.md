@@ -4,10 +4,11 @@
 
 NexusFlow is an enterprise workflow automation platform designed for internal operations at Alpha10 group companies. The application provides four core workflow modules:
 
-1. **Memo Approvals** - Multi-step approval workflows with role-based routing (HOD → Administrative Department → Operations → EAG → MD)
-2. **Issue Tracker** - Internal issue reporting and resolution tracking with department assignments
-3. **IT Tickets** - IT support ticket management with priority levels and status tracking
-4. **Risk Reports** - Risk incident logging and tracking with category, likelihood, and impact assessment (RSK-XXX IDs, visible to IT and Risk departments, reviewable by IT/Risk)
+1. **Memo Approvals** - Multi-step approval workflows with role-based routing (Initiator → HOD → EAG → Finance → MD → Operations)
+2. **Procurement** - Uses the same memo workflow (Initiator → HOD → EAG → Finance → MD → Operations)
+3. **Issue Tracker** - Sequential approval workflow (Initiator → Risk → MD) with approve/reject at each step
+4. **IT Tickets** - IT support ticket management (Initiator → IT) with priority levels and status tracking
+5. **Risk Reports** - Sequential approval workflow (Initiator → Risk → MD) with approve/reject at each step
 
 The platform supports three distinct business entities (Alpha10 Fund Management, Alpha10 Advisory, Alpha10 Global Market Limited) with entity-scoped data isolation.
 
@@ -48,7 +49,14 @@ Preferred communication style: Simple, everyday language.
 
 **Entity-Scoped Multi-tenancy**: Data is filtered by selected business entity at the application level rather than database level. Users select an entity at login which scopes all subsequent queries.
 
-**Role-Based Workflow**: Memos follow a configurable approval chain: Initiator → HOD → Administrative Department → Operations → EAG → MD. Each step captures approver signature and comments.
+**Role-Based Workflow**: Each module has its own approval chain:
+- Memos/Procurement: Initiator → HOD → EAG → Finance → MD → Operations
+- Issue Tracker: Initiator → Risk → MD
+- Risk Reports: Initiator → Risk → MD
+- IT Tickets: Initiator → IT
+Each step captures approver signature/comments. IT role has read access to all modules.
+
+**IT Backend Visibility**: IT users can view all data across memos, procurement, issues, risk reports, and IT tickets for administrative oversight.
 
 **Unified Build**: Production build bundles both frontend (Vite) and backend (esbuild) into `dist/` directory for single-process deployment.
 

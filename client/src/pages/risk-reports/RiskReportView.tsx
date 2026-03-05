@@ -12,13 +12,6 @@ import { downloadFile } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -39,7 +32,6 @@ export default function RiskReportView() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [comment, setComment] = useState("");
-  const [reviewStatus, setReviewStatus] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -69,7 +61,14 @@ export default function RiskReportView() {
     );
   }
 
-  const canReview = currentUser?.role ? ['IT', 'Risk'].includes(currentUser.role) : false;
+  const canReview = (() => {
+    if (!currentUser?.role) return false;
+    if (report.status === 'Pending Risk' && currentUser.role === 'Risk') return true;
+    if (report.status === 'Pending MD' && currentUser.role === 'MD') return true;
+    return false;
+  })();
+
+  const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
 
   const handleDownloadPDF = async () => {
     if (!report) return;
@@ -243,13 +242,13 @@ export default function RiskReportView() {
   const handleReview = async () => {
     setIsProcessing(true);
     try {
-      await api.riskReports.review(report.id, comment, reviewStatus || undefined);
+      await api.riskReports.review(report.id, comment, reviewAction);
       const updated = await api.riskReports.getById(report.id);
       setReport(updated);
       setIsDialogOpen(false);
       setComment("");
-      setReviewStatus("");
-      toast({ title: "Review Submitted", description: "Your review has been recorded." });
+      setReviewAction('approve');
+      toast({ title: reviewAction === 'approve' ? "Approved" : "Rejected", description: `Risk report has been ${reviewAction === 'approve' ? 'approved' : 'rejected'}.` });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to submit review", variant: "destructive" });
     } finally {
@@ -279,14 +278,23 @@ export default function RiskReportView() {
               <Button variant="outline" className="gap-2" onClick={handleDownloadPDF} data-testid="button-download">
                 <Download className="w-4 h-4" /> Download PDF
               </Button>
-              {canReview && report.status !== 'Resolved' && (
-                <Button
-                  className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
-                  onClick={() => setIsDialogOpen(true)}
-                  data-testid="button-review"
-                >
-                  <MessageSquare className="w-4 h-4" /> Add Review
-                </Button>
+              {canReview && !['Resolved', 'Rejected'].includes(report.status) && (
+                <>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                    onClick={() => { setReviewAction('approve'); setIsDialogOpen(true); }}
+                    data-testid="button-approve"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    className="bg-red-600 hover:bg-red-700 text-white gap-2"
+                    onClick={() => { setReviewAction('reject'); setIsDialogOpen(true); }}
+                    data-testid="button-reject"
+                  >
+                    Reject
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -432,25 +440,14 @@ export default function RiskReportView() {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Review</DialogTitle>
+                <DialogTitle>{reviewAction === 'approve' ? 'Approve Risk Report' : 'Reject Risk Report'}</DialogTitle>
                 <DialogDescription>
-                  Submit your review for this risk report as {currentUser?.role}.
+                  {reviewAction === 'approve'
+                    ? `Approve this risk report as ${currentUser?.role}. It will move to the next step.`
+                    : `Reject this risk report as ${currentUser?.role}.`}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Update Status (optional)</Label>
-                  <Select value={reviewStatus} onValueChange={setReviewStatus}>
-                    <SelectTrigger data-testid="select-review-status">
-                      <SelectValue placeholder="Keep current status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Open">Open</SelectItem>
-                      <SelectItem value="Under Review">Under Review</SelectItem>
-                      <SelectItem value="Resolved">Resolved</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label>Comment</Label>
                   <Textarea
@@ -466,10 +463,10 @@ export default function RiskReportView() {
                 <Button
                   onClick={handleReview}
                   disabled={isProcessing}
-                  className="bg-amber-600 hover:bg-amber-700"
+                  className={reviewAction === 'reject' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}
                   data-testid="button-confirm-review"
                 >
-                  {isProcessing ? 'Submitting...' : 'Submit Review'}
+                  {isProcessing ? 'Processing...' : reviewAction === 'approve' ? 'Approve' : 'Reject'}
                 </Button>
               </DialogFooter>
             </DialogContent>
