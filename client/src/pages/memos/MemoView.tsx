@@ -337,15 +337,6 @@ export default function MemoView() {
                     Revise & Resubmit
                   </Button>
                )}
-               {currentUser?.role === 'Finance' && memo.status === 'Approved' && (
-                <Button 
-                  className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
-                  onClick={() => { setActionType('treat'); setTreatComment(''); setIsDialogOpen(true); }}
-                  data-testid="button-treat"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Mark as Treated
-                </Button>
-               )}
                <Button variant="outline" className="gap-2" onClick={handleDownloadPDF} data-testid="button-download">
                 <Download className="w-4 h-4" /> Download PDF
               </Button>
