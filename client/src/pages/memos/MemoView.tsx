@@ -351,13 +351,22 @@ export default function MemoView() {
               </Button>
               
               {canAct && currentUser?.role === 'Operations' && (
-                <Button 
-                  className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
-                  onClick={() => { setActionType('approve'); setIsDialogOpen(true); }}
-                  data-testid="button-treat"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Treated
-                </Button>
+                <>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => { setActionType('reject'); setIsDialogOpen(true); }}
+                    data-testid="button-reject"
+                  >
+                    Reject
+                  </Button>
+                  <Button 
+                    className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+                    onClick={() => { setActionType('approve'); setIsDialogOpen(true); }}
+                    data-testid="button-treat"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Treated
+                  </Button>
+                </>
               )}
               {canAct && currentUser?.role !== 'Operations' && (
                 <>
