@@ -4,21 +4,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, History, Download } from "lucide-react";
-import { useState } from "react";
+import { Search, History, Download, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 
+type AuditLogEntry = {
+  id: number;
+  action: string;
+  user: string;
+  role: string;
+  entity?: string;
+  details: string;
+  timestamp: string;
+};
+
 export default function AuditLog() {
-  const { auditLogs, currentUser } = useStore();
+  const { currentUser } = useStore();
   const [search, setSearch] = useState("");
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const tableRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  if (currentUser.role !== 'IT') {
+  useEffect(() => {
+    fetch('/api/audit-logs', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        setAuditLogs(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (!currentUser || currentUser.role !== 'IT') {
     return (
       <div className="flex h-screen w-full bg-slate-50/50 items-center justify-center">
         <div className="text-center">
@@ -82,6 +104,11 @@ export default function AuditLog() {
               </div>
             </CardHeader>
             <CardContent className="p-0" ref={tableRef}>
+              {loading ? (
+                <div className="flex items-center justify-center h-32">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                </div>
+              ) : (
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
@@ -117,6 +144,7 @@ export default function AuditLog() {
                   )}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </div>

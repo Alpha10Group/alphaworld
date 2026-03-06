@@ -2,7 +2,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { useStore } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, BarChart3, PieChart } from "lucide-react";
+import { Download, TrendingUp, BarChart3, PieChart, Loader2 } from "lucide-react";
 import { 
   BarChart, 
   Bar, 
@@ -18,17 +18,37 @@ import {
   Line,
   Legend
 } from "recharts";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Reports() {
-  const { memos, issues, tickets, currentUser } = useStore();
+  const { currentUser } = useStore();
   const reportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [memos, setMemos] = useState<any[]>([]);
+  const [issues, setIssues] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [riskReports, setRiskReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (currentUser.role !== 'IT') {
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/memos', { credentials: 'include' }).then(r => r.json()).catch(() => []),
+      fetch('/api/issues', { credentials: 'include' }).then(r => r.json()).catch(() => []),
+      fetch('/api/tickets', { credentials: 'include' }).then(r => r.json()).catch(() => []),
+      fetch('/api/risk-reports', { credentials: 'include' }).then(r => r.json()).catch(() => []),
+    ]).then(([m, i, t, r]) => {
+      setMemos(Array.isArray(m) ? m : []);
+      setIssues(Array.isArray(i) ? i : []);
+      setTickets(Array.isArray(t) ? t : []);
+      setRiskReports(Array.isArray(r) ? r : []);
+      setLoading(false);
+    });
+  }, []);
+
+  if (!currentUser || currentUser.role !== 'IT') {
     return (
       <div className="flex h-screen w-full bg-slate-50/50 items-center justify-center">
         <div className="text-center">
@@ -39,19 +59,30 @@ export default function Reports() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full bg-slate-50/50">
+        <Sidebar />
+        <main className="flex-1 overflow-auto p-8 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        </main>
+      </div>
+    );
+  }
+
   const chartData = [
     { name: 'Memos', count: memos.length },
     { name: 'Issues', count: issues.length },
     { name: 'Tickets', count: tickets.length },
+    { name: 'Risk Reports', count: riskReports.length },
   ];
 
   const pieData = [
-    { name: 'Approved', value: memos.filter(m => m.status === 'Approved').length || 1 },
-    { name: 'Pending', value: memos.filter(m => m.status.includes('Pending')).length || 1 },
+    { name: 'Approved', value: memos.filter(m => m.status === 'Approved').length || 0 },
+    { name: 'Pending', value: memos.filter(m => (m.status || '').includes('Pending')).length || 0 },
     { name: 'Rejected', value: memos.filter(m => m.status === 'Rejected').length || 0 },
-  ];
+  ].filter(d => d.value > 0);
 
-  // Mock trend data
   const trendData = [
     { name: 'Mon', volume: 4 },
     { name: 'Tue', volume: 3 },
@@ -63,6 +94,10 @@ export default function Reports() {
   ];
 
   const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
+
+  const approvalRate = memos.length > 0 
+    ? Math.round((memos.filter(m => m.status === 'Approved').length / memos.length) * 100) 
+    : 0;
 
   const handleDownload = async () => {
     if (!reportRef.current) return;
@@ -100,7 +135,6 @@ export default function Reports() {
 
           <div ref={reportRef} className="space-y-8 bg-slate-50/50 p-4">
             
-            {/* Header for PDF */}
             <div className="hidden print:block mb-8">
               <h1 className="text-2xl font-bold">NexusFlow Executive Report</h1>
               <p className="text-slate-500">Generated on {new Date().toLocaleDateString()}</p>
@@ -140,7 +174,7 @@ export default function Reports() {
                   <ResponsiveContainer width="100%" height="100%">
                     <RePieChart>
                       <Pie
-                        data={pieData}
+                        data={pieData.length > 0 ? pieData : [{ name: 'No Data', value: 1 }]}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -148,8 +182,8 @@ export default function Reports() {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {(pieData.length > 0 ? pieData : [{ name: 'No Data', value: 1 }]).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={pieData.length > 0 ? COLORS[index % COLORS.length] : '#e2e8f0'} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -181,23 +215,29 @@ export default function Reports() {
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
                 <Card className="bg-blue-50 border-blue-100 shadow-none">
                     <CardContent className="p-6 text-center">
                         <div className="text-3xl font-bold text-blue-700">{memos.length}</div>
-                        <div className="text-sm text-blue-600 font-medium">Total Memos Processed</div>
+                        <div className="text-sm text-blue-600 font-medium">Total Memos</div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-amber-50 border-amber-100 shadow-none">
+                    <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-amber-700">{issues.length}</div>
+                        <div className="text-sm text-amber-600 font-medium">Total Issues</div>
                     </CardContent>
                 </Card>
                 <Card className="bg-emerald-50 border-emerald-100 shadow-none">
                     <CardContent className="p-6 text-center">
-                        <div className="text-3xl font-bold text-emerald-700">{Math.round((memos.filter(m => m.status === 'Approved').length / memos.length) * 100) || 0}%</div>
+                        <div className="text-3xl font-bold text-emerald-700">{approvalRate}%</div>
                         <div className="text-sm text-emerald-600 font-medium">Approval Rate</div>
                     </CardContent>
                 </Card>
                 <Card className="bg-purple-50 border-purple-100 shadow-none">
                     <CardContent className="p-6 text-center">
-                        <div className="text-3xl font-bold text-purple-700">~2.5 Days</div>
-                        <div className="text-sm text-purple-600 font-medium">Avg. Turnaround Time</div>
+                        <div className="text-3xl font-bold text-purple-700">{tickets.length}</div>
+                        <div className="text-sm text-purple-600 font-medium">Total Tickets</div>
                     </CardContent>
                 </Card>
             </div>
