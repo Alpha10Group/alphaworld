@@ -531,19 +531,41 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Memo not found" });
       }
 
-      const resetWorkflow = memo.workflow.map((w: any) => ({
-        ...w,
-        status: 'Pending',
-        date: undefined,
-        comment: undefined,
-        signature: undefined
-      }));
+      const rejectorIndex = memo.workflow.findIndex((w: any) => w.status === 'Rejected');
+      
+      let updatedWorkflow;
+      let nextHandler;
+      
+      if (rejectorIndex >= 0) {
+        updatedWorkflow = memo.workflow.map((w: any, i: number) => {
+          if (i < rejectorIndex) {
+            return w;
+          }
+          return {
+            ...w,
+            status: 'Pending',
+            date: undefined,
+            comment: undefined,
+            signature: undefined
+          };
+        });
+        nextHandler = updatedWorkflow[rejectorIndex].role;
+      } else {
+        updatedWorkflow = memo.workflow.map((w: any) => ({
+          ...w,
+          status: 'Pending',
+          date: undefined,
+          comment: undefined,
+          signature: undefined
+        }));
+        nextHandler = updatedWorkflow[0].role;
+      }
 
       const updateData: any = {
         content,
-        status: `Pending ${resetWorkflow[0].role}`,
-        currentHandler: resetWorkflow[0].role,
-        workflow: resetWorkflow
+        status: `Pending ${nextHandler}`,
+        currentHandler: nextHandler,
+        workflow: updatedWorkflow
       };
       if (title) {
         updateData.title = title;
