@@ -286,7 +286,7 @@ export async function registerRoutes(
         if (memo.initiator === currentUser.name) return true;
         const workflowRoles = (memo.workflow || []).map((w: any) => w.role);
         if (workflowRoles.includes(userRole)) return true;
-        if (userRole === 'Finance' && memo.status === 'Approved') return true;
+        if (userRole === 'Finance' && (memo.status === 'Approved' || memo.status === 'Treated')) return true;
         return false;
       });
 
@@ -410,10 +410,12 @@ export async function registerRoutes(
       }
 
       const currentStepIndex = memo.workflow.findIndex((w: any) => w.role === memo.currentHandler);
+      const currentUser = await storage.getUser(req.session.userId!);
+      const isOperations = currentUser!.role === 'Operations';
       const newWorkflow = [...memo.workflow];
       newWorkflow[currentStepIndex] = {
         ...newWorkflow[currentStepIndex],
-        status: 'Approved',
+        status: isOperations ? 'Treated' : 'Approved',
         date: new Date().toISOString().split('T')[0],
         comment,
         signature
@@ -427,7 +429,7 @@ export async function registerRoutes(
         nextHandler = newWorkflow[nextStepIndex].role;
         nextStatus = `Pending ${nextHandler}`;
       } else {
-        nextStatus = 'Approved';
+        nextStatus = isOperations ? 'Treated' : 'Approved';
       }
 
       const updatedMemo = await storage.updateMemo(memo.id, {
@@ -435,19 +437,17 @@ export async function registerRoutes(
         currentHandler: nextHandler,
         status: nextStatus
       });
-
-      const currentUser = await storage.getUser(req.session.userId!);
       
       await storage.createAuditLog({
-        action: 'Approve Memo',
+        action: isOperations ? 'Treat Memo' : 'Approve Memo',
         user: currentUser!.name,
         role: currentUser!.role,
         entity: req.session.entity,
-        details: `Approved memo ${req.params.id}`
+        details: `${isOperations ? 'Treated' : 'Approved'} memo ${req.params.id}`
       });
 
       // Send notification to next approver if memo is not fully approved
-      if (nextStatus !== 'Approved' && nextHandler !== memo.currentHandler) {
+      if (nextStatus !== 'Approved' && nextStatus !== 'Treated' && nextHandler !== memo.currentHandler) {
         const nextApprovers = await storage.getUsersByRole(nextHandler);
         for (const approver of nextApprovers) {
           // Send email notification
