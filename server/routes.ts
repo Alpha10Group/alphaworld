@@ -269,8 +269,28 @@ export async function registerRoutes(
   // Memo routes
   app.get("/api/memos", requireAuth, async (req, res) => {
     try {
+      const currentUser = await storage.getUser(req.session.userId!);
       const memos = await storage.getAllMemos(req.session.entity!);
-      res.json(memos);
+      
+      if (!currentUser) {
+        return res.json([]);
+      }
+
+      const userRole = currentUser.role;
+
+      if (userRole === 'IT') {
+        return res.json(memos);
+      }
+
+      const filtered = memos.filter(memo => {
+        if (memo.initiator === currentUser.name) return true;
+        const workflowRoles = (memo.workflow || []).map((w: any) => w.role);
+        if (workflowRoles.includes(userRole)) return true;
+        if (userRole === 'Finance' && memo.status === 'Approved') return true;
+        return false;
+      });
+
+      res.json(filtered);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
