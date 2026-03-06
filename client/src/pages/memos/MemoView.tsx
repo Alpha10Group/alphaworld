@@ -350,7 +350,16 @@ export default function MemoView() {
                 <Download className="w-4 h-4" /> Download PDF
               </Button>
               
-              {canAct && (
+              {canAct && currentUser?.role === 'Operations' && (
+                <Button 
+                  className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+                  onClick={() => { setActionType('approve'); setIsDialogOpen(true); }}
+                  data-testid="button-treat"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Treated
+                </Button>
+              )}
+              {canAct && currentUser?.role !== 'Operations' && (
                 <>
                   <Button 
                     variant="destructive" 
@@ -544,7 +553,8 @@ export default function MemoView() {
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
-                      {actionType === 'approve' ? 'Approve Memo' : 
+                      {actionType === 'approve' && currentUser?.role === 'Operations' ? 'Mark as Treated' :
+                       actionType === 'approve' ? 'Approve Memo' : 
                        actionType === 'reject' ? 'Reject Memo' : 
                        actionType === 'treat' ? 'Mark as Treated' : 'Revise & Resubmit'}
                     </DialogTitle>
@@ -660,6 +670,7 @@ export default function MemoView() {
                         data-testid="button-confirm-action"
                     >
                         {isProcessing ? 'Processing...' : 
+                         actionType === 'approve' && currentUser?.role === 'Operations' ? 'Confirm Treated' :
                          actionType === 'approve' ? 'Sign & Approve' : 
                          actionType === 'reject' ? 'Reject' : 
                          actionType === 'treat' ? 'Confirm Treated' : 'Resubmit'}
